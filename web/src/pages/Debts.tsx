@@ -1,4 +1,4 @@
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useView, type ViewState } from '../hooks/useView';
 import type {
   Json,
@@ -23,7 +23,7 @@ import {
 import { Badge, Card, CollapsibleCard, Money, PageHeader, Row } from '../components/ui';
 import { cx } from '../lib/cx';
 import { EmptyState, ErrorState, LoadingState, QueryState } from '../components/QueryState';
-import { ChartLegend, MoneyTooltip } from '../components/charts';
+import { MoneyTooltip } from '../components/charts';
 import { axisLine, axisTick, gridStroke, seriesColor } from '../components/chartTheme';
 
 export default function Debts() {
@@ -281,9 +281,9 @@ function JsonFacts({ value }: { value: Json }) {
   return (
     <dl className="mt-1 divide-y divide-line">
       {entries.map(([k, v]) => (
-        <div key={k} className="flex items-baseline justify-between gap-3 py-1.5 text-sm">
-          <dt className="min-w-0 text-muted">{humanize(k)}</dt>
-          <dd className="min-w-0 text-right break-words text-ink tabular-nums">{formatJsonScalar(k, v)}</dd>
+        <div key={k} className={cx('py-1.5 text-sm', formatJsonScalar(k, v).length > 40 ? 'space-y-1' : 'flex items-baseline justify-between gap-3')}>
+          <dt className="shrink-0 text-muted">{humanize(k)}</dt>
+          <dd className={cx('min-w-0 break-words text-ink tabular-nums', formatJsonScalar(k, v).length > 40 ? 'text-left leading-relaxed' : 'text-right')}>{formatJsonScalar(k, v)}</dd>
         </div>
       ))}
     </dl>
@@ -313,7 +313,7 @@ function ProjectionChart({ rows }: { rows: VDebtPlanProjection[] }) {
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={16} />
+            <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={40} />
             <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={56} />
             <Tooltip
               content={(p) => (
@@ -382,26 +382,43 @@ function ScheduleSection({
     byMonth.set(r.month, row);
   }
   const data = [...byMonth.values()];
-  const lines = [...series.entries()].map(([id, name], i) => ({ id, name, color: colorFor(id, i) }));
+  // One small chart per debt, each with its own y-scale, so a $32K auto loan can't flatten the $500 Affirm loans.
+  // Biggest balance first; the caption shows when each debt hits $0.
+  const cards = [...series.entries()]
+    .map(([id, name], i) => {
+      const firstRow = data.find((r) => typeof r[id] === 'number');
+      const start = (firstRow?.[id] as number | undefined) ?? 0;
+      const paidOff = data.find((r) => typeof r[id] === 'number' && (r[id]) <= 0);
+      return { id, name, start, color: colorFor(id, i), payoff: paidOff ? String(paidOff.month) : null };
+    })
+    .sort((a, b) => b.start - a.start);
 
   return (
-    <>
-      <ChartLegend items={lines.map((l) => ({ label: l.name, color: l.color, kind: 'line' as const }))} />
-      <div className="h-56 w-full sm:h-64" role="img" aria-label="Line chart of projected end balance per debt by month">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={gridStroke} vertical={false} />
-            <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={16} />
-            <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={56} />
-            <Tooltip
-              content={(p) => <MoneyTooltip active={p.active} payload={p.payload} label={p.label} formatLabel={(l) => formatMonth(String(l))} />}
-            />
-            {lines.map((l) => (
-              <Line key={l.id} dataKey={l.id} name={l.name} stroke={l.color} strokeWidth={2} dot={false} activeDot={{ r: 4 }} connectNulls />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {cards.map((c) => (
+        <figure key={c.id} className="min-w-0 rounded-xl border border-line p-3">
+          <figcaption className="mb-1 flex items-baseline justify-between gap-2 text-sm">
+            <span className="flex min-w-0 items-center gap-1.5 font-medium text-ink">
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} aria-hidden="true" />
+              <span className="truncate">{c.name}</span>
+            </span>
+            <span className="shrink-0 text-xs text-muted">{c.payoff ? `Paid off ${formatMonth(c.payoff, 'short')}` : 'Not paid off in plan'}</span>
+          </figcaption>
+          <div className="h-36 w-full" role="img" aria-label={`Projected end balance for ${c.name} by month`}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
+                <CartesianGrid stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={40} />
+                <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={48} domain={[0, 'auto']} tickCount={3} />
+                <Tooltip
+                  content={(p) => <MoneyTooltip active={p.active} payload={p.payload} label={p.label} formatLabel={(l) => formatMonth(String(l))} />}
+                />
+                <Area dataKey={c.id} name={c.name} stroke={c.color} fill={c.color} fillOpacity={0.15} strokeWidth={2} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </figure>
+      ))}
+    </div>
   );
 }
