@@ -383,7 +383,7 @@ function ScheduleSection({
   }
   const data = [...byMonth.values()];
   // One small chart per debt, each with its own y-scale, so a $32K auto loan can't flatten the $500 Affirm loans.
-  // Biggest balance first; the caption shows when each debt hits $0.
+  // Earliest payoff first (ties: bigger balance first); the caption shows when each debt hits $0.
   const cards = [...series.entries()]
     .map(([id, name], i) => {
       const firstRow = data.find((r) => typeof r[id] === 'number');
@@ -391,7 +391,7 @@ function ScheduleSection({
       const paidOff = data.find((r) => typeof r[id] === 'number' && (r[id]) <= 0);
       return { id, name, start, color: colorFor(id, i), payoff: paidOff ? String(paidOff.month) : null };
     })
-    .sort((a, b) => b.start - a.start);
+    .sort((a, b) => (a.payoff ?? '9999').localeCompare(b.payoff ?? '9999') || b.start - a.start);
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
