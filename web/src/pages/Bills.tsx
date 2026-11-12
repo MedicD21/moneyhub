@@ -1,6 +1,6 @@
 import { useView } from '../hooks/useView';
 import { useQueryParams } from '../hooks/useParams';
-import type { VBillStatus, VMonthlyBillsTotal } from '../types/db';
+import type { VAppInfo, VBillMonthTotals, VBillStatus, VMonthlyBillsTotal } from '../types/db';
 import {
   daysInMonth,
   formatCount,
@@ -10,22 +10,25 @@ import {
   formatRelativeDays,
   humanize,
   isMonthStart,
-  monthStart,
   parseIsoDate,
-  todayLocal,
   toIsoDate,
   weekdayOf,
 } from '../lib/format';
 import { Badge, Card, Money, PageHeader, Row } from '../components/ui';
 import { cx } from '../lib/cx';
 import { MonthStepper } from '../components/MonthControls';
-import { QueryState } from '../components/QueryState';
+import { ErrorState, LoadingState, QueryState } from '../components/QueryState';
 import { billStatusBadge } from '../components/billStatus';
 
 type Visual = 'paid' | 'due' | 'overdue' | 'partial' | 'skipped';
 
-function visualOf(b: Pick<VBillStatus, 'status' | 'overdue'>): Visual {
-  if (b.overdue) return 'overdue';
+/** Overdue only counts for active bills (matches v_upcoming_bills / v_dashboard / v_bill_month_totals). */
+function isOverdue(b: Pick<VBillStatus, 'overdue' | 'bill_is_active'>): boolean {
+  return b.overdue && b.bill_is_active;
+}
+
+function visualOf(b: Pick<VBillStatus, 'status' | 'overdue' | 'bill_is_active'>): Visual {
+  if (isOverdue(b)) return 'overdue';
   return b.status;
 }
 
@@ -57,12 +60,46 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function Bills() {
   const { params, set } = useQueryParams();
-  const today = todayLocal();
+  const appInfo = useView<VAppInfo>('v_app_info', (sb) => sb.from('v_app_info').select('*').limit(1));
+  const info = appInfo.data?.[0] ?? null;
   const monthParam = params.get('month');
-  const month = isMonthStart(monthParam) ? monthParam : monthStart(today);
+  const month = isMonthStart(monthParam) ? monthParam : (info?.current_month ?? null);
 
+  if (!month) {
+    return (
+      <>
+        <PageHeader title="Bills" />
+        <Card>
+          {appInfo.error ? (
+            <ErrorState label="today’s date" message={appInfo.error} onRetry={appInfo.reload} />
+          ) : appInfo.data && !info ? (
+            <ErrorState label="today’s date" message="v_app_info returned no row." onRetry={appInfo.reload} />
+          ) : (
+            <LoadingState label="bills" lines={8} />
+          )}
+        </Card>
+      </>
+    );
+  }
+  return <BillsMonth month={month} today={info?.today ?? null} currentMonth={info?.current_month ?? null} onMonth={(m) => set({ month: m === info?.current_month ? null : m })} />;
+}
+
+function BillsMonth({
+  month,
+  today,
+  currentMonth,
+  onMonth,
+}: {
+  month: string;
+  today: string | null;
+  currentMonth: string | null;
+  onMonth: (month: string) => void;
+}) {
   const bills = useView<VBillStatus>(`v_bill_status:${month}`, (sb) =>
     sb.from('v_bill_status').select('*').eq('due_month', month).order('due_date').order('bill_name'),
+  );
+  const monthTotals = useView<VBillMonthTotals>(`v_bill_month_totals:${month}`, (sb) =>
+    sb.from('v_bill_month_totals').select('*').eq('due_month', month).limit(1),
   );
   const totals = useView<VMonthlyBillsTotal>('v_monthly_bills_total', (sb) => sb.from('v_monthly_bills_total').select('*').limit(1));
 
@@ -70,7 +107,20 @@ export default function Bills() {
     <>
       <PageHeader
         title="Bills"
-        actions={<MonthStepper value={month} onChange={(m) => set({ month: m === monthStart(today) ? null : m })} />}
+        actions={
+          <>
+            {currentMonth && month !== currentMonth ? (
+              <button
+                type="button"
+                onClick={() => onMonth(currentMonth)}
+                className="min-h-10 rounded-lg px-2 text-sm font-medium text-accent hover:underline"
+              >
+                This month
+              </button>
+            ) : null}
+            <MonthStepper value={month} onChange={onMonth} />
+          </>
+        }
       />
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
@@ -88,30 +138,63 @@ export default function Bills() {
           </ul>
         </Card>
 
-        <Card title="Typical month" subtitle="All active bills, normalized to a monthly amount">
-          <QueryState state={totals} label="the monthly bills total" empty="No active bills yet.">
-            {(rows) => {
-              const t = rows[0];
-              if (!t) return null;
-              return (
-                <>
-                  <div className="text-3xl font-semibold tracking-tight text-ink">
-                    <Money value={t.monthly_total} />
-                  </div>
-                  <div className="mt-3 divide-y divide-line border-t border-line">
-                    <Row label="On autopay">
-                      <Money value={t.autopay_monthly_total} />
-                    </Row>
-                    <Row label="Variable amount">
-                      <Money value={t.variable_monthly_total} />
-                    </Row>
-                    <Row label="Active bills">{formatCount(t.active_bill_count)}</Row>
-                  </div>
-                </>
-              );
-            }}
-          </QueryState>
-        </Card>
+        <div className="space-y-4">
+          <Card title={`${formatMonth(month)} totals`} subtitle="Active bills; skipped bills excluded">
+            <QueryState state={monthTotals} label="this month’s bill totals" empty={`No active bills due in ${formatMonth(month)}.`}>
+              {(rows) => {
+                const t = rows[0];
+                if (!t) return null;
+                return (
+                  <>
+                    <div className="text-xs font-medium text-muted">Still to pay</div>
+                    <div className={cx('text-3xl font-semibold tracking-tight', t.overdue_count > 0 ? 'text-danger' : 'text-ink')}>
+                      <Money value={t.remaining_total} />
+                    </div>
+                    <div className="mt-3 divide-y divide-line border-t border-line">
+                      <Row label="Expected">
+                        <Money value={t.expected_total} />
+                      </Row>
+                      <Row label="Paid">
+                        <Money value={t.paid_total} />
+                      </Row>
+                      <Row label="Bills paid">
+                        {formatCount(t.paid_count)} of {formatCount(t.occurrence_count)}
+                      </Row>
+                      <Row label="Overdue">
+                        <span className={cx(t.overdue_count > 0 && 'font-semibold text-danger')}>{formatCount(t.overdue_count)}</span>
+                      </Row>
+                    </div>
+                  </>
+                );
+              }}
+            </QueryState>
+          </Card>
+
+          <Card title="Typical month" subtitle="All active bills, normalized to a monthly amount">
+            <QueryState state={totals} label="the monthly bills total" empty="No active bills yet.">
+              {(rows) => {
+                const t = rows[0];
+                if (!t) return null;
+                return (
+                  <>
+                    <div className="text-2xl font-semibold tracking-tight text-ink">
+                      <Money value={t.monthly_total} />
+                    </div>
+                    <div className="mt-3 divide-y divide-line border-t border-line">
+                      <Row label="On autopay">
+                        <Money value={t.autopay_monthly_total} />
+                      </Row>
+                      <Row label="Variable amount">
+                        <Money value={t.variable_monthly_total} />
+                      </Row>
+                      <Row label="Active bills">{formatCount(t.active_bill_count)}</Row>
+                    </div>
+                  </>
+                );
+              }}
+            </QueryState>
+          </Card>
+        </div>
       </div>
 
       <Card title={`Bills in ${formatMonth(month)}`} className="mt-4">
@@ -129,7 +212,7 @@ export default function Bills() {
   );
 }
 
-function Calendar({ month, today, rows }: { month: string; today: string; rows: VBillStatus[] }) {
+function Calendar({ month, today, rows }: { month: string; today: string | null; rows: VBillStatus[] }) {
   const p = parseIsoDate(month);
   if (!p) return null;
   const lead = weekdayOf(month);
@@ -167,7 +250,7 @@ function Calendar({ month, today, rows }: { month: string; today: string; rows: 
           const label =
             items.length === 0
               ? formatDate(iso, 'weekday')
-              : `${formatDate(iso, 'weekday')}: ${items.map((b) => `${b.bill_name} ${billStatusBadge(b.status, b.overdue).label}`).join(', ')}`;
+              : `${formatDate(iso, 'weekday')}: ${items.map((b) => `${b.bill_name} ${billStatusBadge(b.status, isOverdue(b)).label}`).join(', ')}`;
           return (
             <li
               key={iso}
@@ -192,7 +275,7 @@ function Calendar({ month, today, rows }: { month: string; today: string; rows: 
                     {items.map((b) => (
                       <li
                         key={b.occurrence_id}
-                        title={`${b.bill_name} · ${formatCurrencyWhole(b.expected_amount)} · ${billStatusBadge(b.status, b.overdue).label}`}
+                        title={`${b.bill_name} · ${formatCurrencyWhole(b.expected_amount)} · ${billStatusBadge(b.status, isOverdue(b)).label}`}
                         className={cx('truncate rounded border px-1 text-[10.5px] leading-4', CHIP[visualOf(b)])}
                       >
                         {b.bill_name}
@@ -210,10 +293,10 @@ function Calendar({ month, today, rows }: { month: string; today: string; rows: 
 }
 
 function BillRow({ b }: { b: VBillStatus }) {
-  const badge = billStatusBadge(b.status, b.overdue);
+  const badge = billStatusBadge(b.status, isOverdue(b));
   const unpaid = b.status === 'due' || b.status === 'partial';
   return (
-    <li className="px-4 py-3 sm:px-5">
+    <li className={cx('px-4 py-3 sm:px-5', !b.bill_is_active && 'opacity-75')}>
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">
@@ -221,6 +304,7 @@ function BillRow({ b }: { b: VBillStatus }) {
             <Badge tone={badge.tone}>{badge.label}</Badge>
             {b.autopay ? <Badge tone="muted">Autopay</Badge> : null}
             {b.is_variable ? <Badge tone="muted">Variable</Badge> : null}
+            {!b.bill_is_active ? <Badge tone="muted">Inactive bill</Badge> : null}
           </div>
           <div className="mt-0.5 text-xs text-muted">
             Due {formatDate(b.due_date, 'weekday')}
@@ -248,7 +332,7 @@ function BillRow({ b }: { b: VBillStatus }) {
           </div>
           <div>
             <dt className="text-muted">Remaining</dt>
-            <dd className={cx('mt-0.5 text-sm font-semibold', b.overdue ? 'text-danger' : 'text-ink')}>
+            <dd className={cx('mt-0.5 text-sm font-semibold', isOverdue(b) ? 'text-danger' : 'text-ink')}>
               <Money value={b.remaining_amount} />
             </dd>
           </div>

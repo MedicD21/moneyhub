@@ -10,6 +10,20 @@ Legend: 🔑 needs a credential or account · ✋ manual check · ⏱ rough time
 > **Project URL** and the **publishable/anon key**, never the `service_role`/secret key
 > and never the database password.
 
+## What was already verified (so you know what's left)
+
+| Check | Result | How |
+|---|---|---|
+| Phase 1 SQL acceptance (all 7 items) + security + Phase 2 screenshot logic + review regressions | **189/189 pass** | pgTAP on local PostgreSQL 16 + pg_cron, with a Supabase role/auth shim |
+| Web app: typecheck, lint, 40 unit tests, production build | **pass** | `npm run typecheck / lint / test / build` |
+| Web app in a real browser (Chromium, 390px and 1280px) on demo data | **55/55 checks pass** | Every page loads with no console errors and no sideways scrolling. Dashboard, paycheck, debt and bill figures match their views exactly. 5 write attempts from the browser console are refused (403 / `42501`). The app made only reads. |
+
+One caveat on the browser run: Docker wasn't available, so the app talked to the real
+database through a small **PostgREST-compatible test double** I wrote. It runs every
+request as the `authenticated` role with JWT claims, so RLS and grants are enforced by
+Postgres itself. It is not Supabase's actual API gateway. Steps 3 and 11 below repeat the
+key checks on the real thing.
+
 ---
 
 ## 0. Before you start 🔑
