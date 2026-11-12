@@ -1,6 +1,11 @@
 -- Phase 1: the remaining views + the cron job
 begin;
 create extension if not exists pgtap with schema extensions;
+-- Start from empty tables (rolled back with the test), so the suite also runs on a seeded DB.
+truncate public.app_settings, public.accounts, public.import_batches, public.categories,
+  public.transactions, public.balance_snapshots, public.merchant_rules, public.income_sources,
+  public.bills, public.bill_occurrences, public.debts, public.debt_balances, public.set_asides,
+  public.debt_plans cascade;
 select plan(17);
 
 insert into auth.users (id, email) values ('11111111-1111-1111-1111-111111111111', 'owner@test.local');

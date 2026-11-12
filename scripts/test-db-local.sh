@@ -43,7 +43,7 @@ CONF
 PSQL=(psql -X -q -v ON_ERROR_STOP=1 -h "$DATA" -p "$PORT" -U postgres -d postgres)
 
 echo "==> Supabase shim"
-"${PSQL[@]}" -f "$ROOT/supabase/tests/local/supabase_shim.sql"
+"${PSQL[@]}" -f "$ROOT/scripts/local/supabase_shim.sql"
 
 echo "==> Migrations"
 for f in "$ROOT"/supabase/migrations/*.sql; do

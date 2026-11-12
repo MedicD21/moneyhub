@@ -90,7 +90,7 @@ functions.
    - An income source or bill with a *future* `anchor_date` also generates dates before it. Use a real past payday, or keep a not-yet-started job inactive.
    - Semimonthly days that clamp to the same date (e.g. `{28,31}` in February) give one payday that month.
    - Two `debts` rows pointing at the same card, or the same card entered both as a linked debt and as an unlinked account, are double counted in `total_debt`.
-9. **Tests ran on plain PostgreSQL 16** with a small Supabase shim (no Docker in the build environment), not on a live Supabase PG17 instance. The SQL uses only features available in both. The files are standard pgTAP and run unchanged with `supabase test db`. **[Likely]** no differences; run that command once to confirm.
+9. **Tests were later confirmed on Supabase's own stack** (PG17, `supabase test db`, 189/189) and the web app against the real API and magic-link login. What remains unverified is only the hosted project itself: run `supabase test db --linked` once before entering real data.
 
 ## H. Defects found by an independent review of the first implementation (all fixed)
 

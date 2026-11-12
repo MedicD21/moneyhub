@@ -14,15 +14,13 @@ Legend: 🔑 needs a credential or account · ✋ manual check · ⏱ rough time
 
 | Check | Result | How |
 |---|---|---|
-| Phase 1 SQL acceptance (all 7 items) + security + Phase 2 screenshot logic + review regressions | **189/189 pass** | pgTAP on local PostgreSQL 16 + pg_cron, with a Supabase role/auth shim |
+| Migrations on Supabase's own Postgres 17 | **apply cleanly** | `supabase start` (local Docker stack) |
+| SQL suite: Phase 1 acceptance, security, Phase 2 screenshot logic, review regressions | **189/189 pass** | `supabase test db`, on both an empty and a demo-seeded database |
+| Real Supabase API (PostgREST + GoTrue) | **pass** | Magic-link login works. Reads return view data. Every write and writer-RPC attempt gets 403 / `42501`, anon gets 401, sign-ups and unknown-email magic links are refused. |
 | Web app: typecheck, lint, 40 unit tests, production build | **pass** | `npm run typecheck / lint / test / build` |
-| Web app in a real browser (Chromium, 390px and 1280px) on demo data | **55/55 checks pass** | Every page loads with no console errors and no sideways scrolling. Dashboard, paycheck, debt and bill figures match their views exactly. 5 write attempts from the browser console are refused (403 / `42501`). The app made only reads. |
+| Web app in a browser against local Supabase | **29/29 pass** | Real magic link via Mailpit, then every page: no console errors, no sideways scrolling, dashboard and paycheck numbers equal the views, console writes refused, sign-out works |
 
-One caveat on the browser run: Docker wasn't available, so the app talked to the real
-database through a small **PostgREST-compatible test double** I wrote. It runs every
-request as the `authenticated` role with JWT claims, so RLS and grants are enforced by
-Postgres itself. It is not Supabase's actual API gateway. Steps 3 and 11 below repeat the
-key checks on the real thing.
+What's left is only what needs your hosted project and real data: steps 1–11 below.
 
 ---
 
@@ -85,7 +83,7 @@ In the Supabase dashboard:
 
 1. **Authentication → Sign In / Providers**
    - Turn **off** "Allow new users to sign up" (SPEC §6.1).
-   - Make sure the **Email** provider is enabled (magic links use it).
+   - Make sure the **Email** provider stays **enabled**. Magic links use it, and turning it off blocks your own login ("Email logins are disabled"). Only the sign-up toggle goes off.
 2. **Authentication → URL Configuration**
    - **Site URL:** your web app URL: `http://localhost:5173` for now, and your Vercel URL later (step 10).
    - **Redirect URLs:** add `http://localhost:5173` and, later, `https://<your-app>.vercel.app`.

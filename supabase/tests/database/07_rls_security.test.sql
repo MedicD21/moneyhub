@@ -3,6 +3,11 @@
 -- callable from the API roles.
 begin;
 create extension if not exists pgtap with schema extensions;
+-- Start from empty tables (rolled back with the test), so the suite also runs on a seeded DB.
+truncate public.app_settings, public.accounts, public.import_batches, public.categories,
+  public.transactions, public.balance_snapshots, public.merchant_rules, public.income_sources,
+  public.bills, public.bill_occurrences, public.debts, public.debt_balances, public.set_asides,
+  public.debt_plans cascade;
 -- Test-only: our migrations revoke EXECUTE on new functions from PUBLIC by
 -- default, which also covers pgTAP when it is installed after them.
 grant execute on all functions in schema extensions to anon, authenticated;
