@@ -1,38 +1,21 @@
-/** Turn a Supabase Auth OTP error into a message for the sign-in screen. */
-export function describeOtpError(error: { message?: string; code?: string; status?: number }): string {
+/** Turn a Supabase Auth sign-in error into a message for the sign-in screen. */
+export function describeSignInError(error: { message?: string; code?: string; status?: number }): string {
   const message = (error.message ?? '').toLowerCase();
   const code = error.code ?? '';
 
-  // shouldCreateUser:false + unknown email -> "Signups not allowed for otp" (code otp_disabled, 422).
-  if (
-    code === 'otp_disabled' ||
-    code === 'user_not_found' ||
-    code === 'signup_disabled' ||
-    message.includes('signups not allowed') ||
-    message.includes('user not found') ||
-    message.includes('signup is disabled')
-  ) {
-    return 'That email isn’t recognized. Money Hub is private and sign-ups are turned off; use the email address of the owner account.';
+  // Wrong password and unknown email both come back as invalid_credentials (400),
+  // deliberately indistinguishable so the form doesn't reveal which emails exist.
+  if (code === 'invalid_credentials' || message.includes('invalid login credentials')) {
+    return 'Email or password is incorrect.';
   }
-  if (code === 'over_email_send_rate_limit' || code === 'over_request_rate_limit' || error.status === 429) {
-    return 'Too many sign-in emails were requested. Wait a minute, then try again.';
+  if (code === 'email_not_confirmed' || message.includes('email not confirmed')) {
+    return 'This account isn’t confirmed yet. Confirm the user in the Supabase dashboard (Authentication → Users).';
   }
-  if (code === 'email_address_invalid' || message.includes('invalid') && message.includes('email')) {
-    return 'That doesn’t look like a valid email address.';
+  if (code === 'over_request_rate_limit' || error.status === 429) {
+    return 'Too many sign-in attempts. Wait a minute, then try again.';
   }
-  return error.message || 'Could not send the sign-in link. Try again.';
-}
-
-/**
- * Supabase appends `#error=...&error_code=...&error_description=...` to the
- * redirect URL when a magic link is expired or already used.
- */
-export function readAuthErrorFromHash(hash: string): string | null {
-  if (!hash || hash.length < 2) return null;
-  const params = new URLSearchParams(hash.replace(/^#/, ''));
-  const code = params.get('error_code');
-  const description = params.get('error_description');
-  if (!params.get('error') && !code) return null;
-  if (code === 'otp_expired') return 'That sign-in link has expired or was already used. Request a new one.';
-  return description ? description.replace(/\+/g, ' ') : 'Sign-in failed. Request a new link.';
+  if (code === 'email_provider_disabled' || message.includes('email logins are disabled')) {
+    return 'Email sign-in is turned off for this project. Enable the Email provider in Supabase (Authentication → Sign In / Providers).';
+  }
+  return error.message || 'Could not sign in. Try again.';
 }

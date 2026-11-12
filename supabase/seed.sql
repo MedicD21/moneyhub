@@ -2,8 +2,7 @@
 -- Money Hub — LOCAL DEMO SEED (supabase start / supabase db reset only).
 -- Never run this against your real project: it creates a demo user and fake data.
 --
--- Demo login (local only): demo@moneyhub.local via magic link. With the
--- Supabase CLI the email lands in Mailpit at http://127.0.0.1:54324.
+-- Demo login (local only): demo@moneyhub.local / moneyhub-demo-password
 --
 -- All dates are relative to app_today() so the demo always looks current.
 -- =============================================================================
@@ -43,7 +42,7 @@ begin
                             raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
                             confirmation_token, email_change, email_change_token_new, recovery_token)
     values ('00000000-0000-0000-0000-000000000000', v_uid, 'authenticated', 'authenticated',
-            'demo@moneyhub.local', '', now(),
+            'demo@moneyhub.local', extensions.crypt('moneyhub-demo-password', extensions.gen_salt('bf')), now(),
             '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '')
     on conflict (id) do nothing;
     if exists (select 1 from information_schema.tables where table_schema = 'auth' and table_name = 'identities') then

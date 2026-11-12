@@ -64,8 +64,7 @@ npm run dev
 
 For local development against demo data: `npx supabase start` (applies migrations +
 `seed.sql`), point `.env.local` at `http://127.0.0.1:54321` with the local publishable key
-from `npx supabase status`, and sign in as `demo@moneyhub.local`. The magic link arrives
-in Mailpit at http://127.0.0.1:54324.
+from `npx supabase status`, and sign in as `demo@moneyhub.local` / `moneyhub-demo-password`.
 
 ## Ground rules (enforced, not just documented)
 

@@ -1,37 +1,25 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
-import { describeOtpError, readAuthErrorFromHash } from '../lib/authErrors';
+import { describeSignInError } from '../lib/authErrors';
 import { Banner, Button, Field, inputClass } from '../components/ui';
-import { Icon } from '../components/Icon';
 
-type Status = { kind: 'idle' } | { kind: 'sending' } | { kind: 'sent'; email: string } | { kind: 'error'; message: string };
+type Status = { kind: 'idle' } | { kind: 'signing-in' } | { kind: 'error'; message: string };
 
 export default function Login() {
   const [email, setEmail] = useState('');
-  const [status, setStatus] = useState<Status>(() => {
-    const fromHash = readAuthErrorFromHash(window.location.hash);
-    return fromHash ? { kind: 'error', message: fromHash } : { kind: 'idle' };
-  });
-
-  // Drop a stale #error=... from the address bar once it has been read.
-  useEffect(() => {
-    if (readAuthErrorFromHash(window.location.hash)) {
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
-    }
-  }, []);
+  const [password, setPassword] = useState('');
+  const [status, setStatus] = useState<Status>({ kind: 'idle' });
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!supabase) return;
     const address = email.trim();
-    if (!address) return;
-    setStatus({ kind: 'sending' });
+    if (!address || !password) return;
+    setStatus({ kind: 'signing-in' });
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: address,
-        options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
-      });
-      setStatus(error ? { kind: 'error', message: describeOtpError(error) } : { kind: 'sent', email: address });
+      // On success the auth listener (useAuth) swaps this screen for the app.
+      const { error } = await supabase.auth.signInWithPassword({ email: address, password });
+      if (error) setStatus({ kind: 'error', message: describeSignInError(error) });
     } catch {
       setStatus({ kind: 'error', message: 'Network error: could not reach Supabase. Check your connection and try again.' });
     }
@@ -50,47 +38,44 @@ export default function Login() {
         </div>
 
         <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
-          {status.kind === 'sent' ? (
-            <div role="status" className="space-y-3">
-              <div className="flex items-center gap-2 font-semibold text-ink">
-                <Icon name="mail" size={20} /> Check your email
-              </div>
-              <p className="text-sm text-muted">
-                We sent a sign-in link to <span className="font-medium text-ink">{status.email}</span>. Open it on this device to
-                continue. You can close this tab once you’re signed in.
-              </p>
-              <Button variant="ghost" onClick={() => setStatus({ kind: 'idle' })}>
-                Use a different email
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-              <div>
-                <h2 className="text-base font-semibold text-ink">Sign in</h2>
-                <p className="mt-1 text-sm text-muted">We’ll email you a one-time sign-in link.</p>
-              </div>
-              <Field label="Email">
-                <input
-                  type="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className={inputClass}
-                  placeholder="you@example.com"
-                />
-              </Field>
-              {status.kind === 'error' ? (
-                <Banner tone="danger" title="Couldn’t send the link">
-                  {status.message}
-                </Banner>
-              ) : null}
-              <Button type="submit" variant="primary" disabled={status.kind === 'sending' || !email.trim()} className="w-full">
-                {status.kind === 'sending' ? 'Sending…' : 'Email me a sign-in link'}
-              </Button>
-            </form>
-          )}
+          <form onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
+            <h2 className="text-base font-semibold text-ink">Sign in</h2>
+            <Field label="Email">
+              <input
+                type="email"
+                autoComplete="username"
+                inputMode="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+                placeholder="you@example.com"
+              />
+            </Field>
+            <Field label="Password">
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            {status.kind === 'error' ? (
+              <Banner tone="danger" title="Couldn’t sign in">
+                {status.message}
+              </Banner>
+            ) : null}
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={status.kind === 'signing-in' || !email.trim() || !password}
+              className="w-full"
+            >
+              {status.kind === 'signing-in' ? 'Signing in…' : 'Sign in'}
+            </Button>
+          </form>
         </div>
         <p className="mt-4 text-center text-xs text-muted">Read-only view of your Money Hub data.</p>
       </div>

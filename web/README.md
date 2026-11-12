@@ -58,21 +58,14 @@ missing or malformed the app shows a setup screen instead of crashing.
 
 ## Supabase Auth settings
 
-Sign-in is a magic link (`signInWithOtp` with `shouldCreateUser: false`), and
-`emailRedirectTo` is `window.location.origin`. In the Supabase dashboard:
+Sign-in is **email + password** (`signInWithPassword`). No emails are sent, so no
+SMTP setup or redirect URLs are needed. In the Supabase dashboard:
 
-- **Authentication → Sign In / Providers**: Email enabled; **Allow new users to sign up** off.
-  The owner account must already exist (see `bootstrap_owner` in the migrations).
-  An unknown email gets "Signups not allowed for otp", which the app shows as
-  "That email isn’t recognized".
-- **Authentication → URL Configuration**:
-  - **Site URL**: your production URL, e.g. `https://moneyhub.example.com`.
-  - **Redirect URLs**: add every origin that will request links, e.g.
-    `http://localhost:5173`, `https://moneyhub.example.com`, and for Vercel
-    previews `https://*-<your-team>.vercel.app/**`.
-  A redirect URL that isn't on the list silently falls back to the Site URL.
-- Expired or reused links come back as `#error_code=otp_expired`; the sign-in
-  screen explains that and asks for a new link.
+- **Authentication → Sign In / Providers**: keep the **Email** provider enabled (password
+  login uses it); turn **Allow new users to sign up** off.
+- The owner account must already exist and be confirmed. Set or change its password
+  with `scripts/set-password.sh` from the repo root (prompts, never echoes).
+- A wrong password and an unknown email both show "Email or password is incorrect."
 
 ## Layout
 
@@ -80,7 +73,7 @@ Sign-in is a magic link (`signInWithOtp` with `shouldCreateUser: false`), and
 src/
   lib/supabase.ts      client (null + configError when env is missing)
   lib/format.ts        currency/date formatting (no timezone shift on 'YYYY-MM-DD')
-  lib/authErrors.ts    OTP error messages
+  lib/authErrors.ts    sign-in error messages
   hooks/useView.ts     generic typed query hook -> { data, error, loading, count, reload }
   hooks/useAuth.tsx    session context + sign-out
   hooks/useParams.ts   URL search params as filter state
