@@ -1,18 +1,19 @@
 import { Link } from 'react-router-dom';
 import { useView } from '../hooks/useView';
-import type { VAccountBalance, VDashboard, VUpcomingBill } from '../types/db';
+import type { VAccountBalance, VAppInfo, VDashboard, VUpcomingBill } from '../types/db';
 import { addDays, formatCount, formatCurrency, formatDate, formatDateRange, formatRelativeDays, humanize } from '../lib/format';
 import { Badge, Banner, Card, Money, PageHeader, Row, Stat } from '../components/ui';
 import { cx } from '../lib/cx';
-import { QueryState } from '../components/QueryState';
+import { ErrorState, QueryState } from '../components/QueryState';
 import { billStatusBadge } from '../components/billStatus';
 
 export default function Dashboard() {
   const dash = useView<VDashboard>('v_dashboard', (sb) => sb.from('v_dashboard').select('*').limit(1));
-  const d = dash.data?.[0] ?? null;
+  const appInfo = useView<VAppInfo>('v_app_info', (sb) => sb.from('v_app_info').select('*').limit(1));
+  const today = appInfo.data?.[0]?.today ?? null;
 
-  // v_dashboard.today is the reference date (owner's timezone); 7 days ahead is a date string, not money math.
-  const cutoff = d ? addDays(d.today, 7) : null;
+  // v_app_info.today is the reference date (owner's timezone); 7 days ahead is a date string, not money math.
+  const cutoff = today ? addDays(today, 7) : null;
   const upcoming = useView<VUpcomingBill>(cutoff ? `v_upcoming_bills:${cutoff}` : null, (sb) =>
     sb
       .from('v_upcoming_bills')
@@ -28,7 +29,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <PageHeader title="Dashboard" description={d ? `As of ${formatDate(d.today, 'weekday')}` : undefined} />
+      <PageHeader title="Dashboard" description={today ? `As of ${formatDate(today, 'weekday')}` : undefined} />
 
       <QueryState state={dash} label="the dashboard" empty="No dashboard data yet." loadingLines={8}>
         {(rows) => {
@@ -47,8 +48,8 @@ export default function Dashboard() {
             </Link>
           }
         >
-          {dash.error ? (
-            <p className="text-sm text-muted">Waiting for the dashboard to load.</p>
+          {appInfo.error ? (
+            <ErrorState label="today’s date" message={appInfo.error} onRetry={appInfo.reload} />
           ) : (
             <QueryState state={upcoming} label="upcoming bills" empty="Nothing due in the next 7 days.">
               {(bills) => (
@@ -161,7 +162,9 @@ function DashboardBody({ d }: { d: VDashboard }) {
           title="Safe to spend"
           subtitle={hasPeriod ? `This pay period · ${formatDateRange(d.period_start, d.period_end)}` : 'This pay period'}
           tone={d.shortfall ? 'danger' : 'accent'}
-          action={d.shortfall ? <Badge tone="danger">Shortfall</Badge> : null}
+          action={
+            d.shortfall ? <Badge tone="danger">Shortfall</Badge> : d.overspent ? <Badge tone="danger">Overspent</Badge> : null
+          }
         >
           {hasPeriod ? (
             <>
@@ -169,7 +172,7 @@ function DashboardBody({ d }: { d: VDashboard }) {
                 label="Remaining"
                 value={<Money value={d.remaining_safe_to_spend} />}
                 emphasis
-                tone={d.remaining_safe_to_spend !== null && d.remaining_safe_to_spend < 0 ? 'danger' : 'default'}
+                tone={d.overspent ? 'danger' : 'default'}
               />
               {spentRatio !== null ? (
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">

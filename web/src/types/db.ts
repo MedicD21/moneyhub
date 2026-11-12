@@ -175,6 +175,8 @@ export type VBillStatus = {
   autopay: boolean;
   is_variable: boolean;
   frequency: BillFrequency;
+  /** bills.is_active: occurrences of deactivated bills stay in this view for history */
+  bill_is_active: boolean;
   pay_from_account_id: Uuid | null;
   pay_from_account_name: string | null;
   category_id: Uuid | null;
@@ -182,7 +184,7 @@ export type VBillStatus = {
   transaction_id: Uuid | null;
 };
 
-/** public.v_upcoming_bills: v_bill_status rows that are due/partial and due within 30 days (incl. overdue). */
+/** public.v_upcoming_bills: v_bill_status rows of active bills that are due/partial and due within 30 days (incl. overdue). */
 export type VUpcomingBill = VBillStatus;
 
 /** public.v_monthly_bills_total (one row; normalized monthly run-rate of active bills) */
@@ -278,6 +280,41 @@ export type VBillMatchCandidate = {
   rank: number;
 };
 
+/** public.v_app_info (exactly one row; settings columns are null before bootstrap_owner) */
+export type VAppInfo = {
+  /** app_today(): today in the owner's timezone */
+  today: IsoDate;
+  /** first of today's month */
+  current_month: IsoDate;
+  timezone: string | null;
+  stale_after_days: number | null;
+  low_balance_threshold: number | null;
+};
+
+/** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */
+export type VBillMonthTotals = {
+  due_month: IsoDate;
+  expected_total: number;
+  paid_total: number;
+  remaining_total: number;
+  occurrence_count: number;
+  paid_count: number;
+  overdue_count: number;
+};
+
+/** public.v_tags */
+export type VTag = {
+  tag: string;
+  txn_count: number;
+};
+
+/** public.v_transaction_months */
+export type VTransactionMonth = {
+  /** first of the month */
+  month: IsoDate;
+  txn_count: number;
+};
+
 // ---------------------------------------------------------------------------
 // 20261112000400_paycheck_and_dashboard.sql
 // ---------------------------------------------------------------------------
@@ -352,6 +389,8 @@ export type VPayPeriod = {
   shortfall: boolean;
   spent_so_far: number;
   remaining_safe_to_spend: number;
+  /** remaining_safe_to_spend < 0 */
+  overspent: boolean;
   items: PaycheckItem[];
 };
 
@@ -374,6 +413,7 @@ export type VDashboard = {
   spent_so_far: number | null;
   remaining_safe_to_spend: number | null;
   shortfall: boolean | null;
+  overspent: boolean | null;
   review_queue_count: number;
   oldest_data_days: number | null;
   accounts_without_snapshot: number;
@@ -415,6 +455,10 @@ export type Database = {
       v_debt_plan_schedule: ReadOnlyView<VDebtPlanSchedule>;
       v_debt_plan_projection: ReadOnlyView<VDebtPlanProjection>;
       v_bill_match_candidates: ReadOnlyView<VBillMatchCandidate>;
+      v_app_info: ReadOnlyView<VAppInfo>;
+      v_bill_month_totals: ReadOnlyView<VBillMonthTotals>;
+      v_tags: ReadOnlyView<VTag>;
+      v_transaction_months: ReadOnlyView<VTransactionMonth>;
       v_pay_periods: ReadOnlyView<VPayPeriod>;
       v_dashboard: ReadOnlyView<VDashboard>;
     };

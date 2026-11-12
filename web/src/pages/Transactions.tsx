@@ -1,7 +1,6 @@
-import { useState, type FormEvent } from 'react';
 import { useView } from '../hooks/useView';
 import { useQueryParams } from '../hooks/useParams';
-import type { AccountRow, CategoryRow, VCashFlow, VTransaction } from '../types/db';
+import type { AccountRow, CategoryRow, VTag, VTransaction, VTransactionMonth } from '../types/db';
 import { formatCount, formatDate, isMonthStart } from '../lib/format';
 import { Badge, Button, Card, Field, Money, PageHeader, inputClass } from '../components/ui';
 import { cx } from '../lib/cx';
@@ -23,9 +22,10 @@ export default function Transactions() {
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
 
-  const months = useView<Pick<VCashFlow, 'month'>>('months', (sb) =>
-    sb.from('v_cash_flow').select('month').order('month', { ascending: false }),
+  const months = useView<VTransactionMonth>('v_transaction_months', (sb) =>
+    sb.from('v_transaction_months').select('*').order('month', { ascending: false }),
   );
+  const tags = useView<VTag>('v_tags', (sb) => sb.from('v_tags').select('*').order('tag'));
   const categories = useView<CategoryRow>('categories', (sb) => sb.from('categories').select('*').order('name'));
   const accounts = useView<AccountRow>('accounts', (sb) => sb.from('accounts').select('*').order('name'));
 
@@ -59,7 +59,8 @@ export default function Transactions() {
               <FilterError onRetry={months.reload} />
             ) : (
               <MonthSelect
-                months={(months.data ?? []).map((m) => m.month)}
+                months={withCurrent((months.data ?? []).map((m) => m.month), month)}
+                counts={new Map((months.data ?? []).map((m) => [m.month, m.txn_count]))}
                 value={month}
                 onChange={(m) => set({ month: m })}
                 allLabel={months.loading ? 'Loading…' : 'All months'}
@@ -96,7 +97,21 @@ export default function Transactions() {
               </select>
             )}
           </Field>
-          <TagFilter key={tag} initial={tag} onApply={(t) => set({ tag: t })} />
+          <Field label="Tag">
+            {tags.error ? (
+              <FilterError onRetry={tags.reload} />
+            ) : (
+              <select className={inputClass} value={tag} onChange={(e) => set({ tag: e.target.value })}>
+                <option value="">{tags.loading ? 'Loading…' : (tags.data ?? []).length === 0 ? 'No tags yet' : 'All tags'}</option>
+                {tag && !(tags.data ?? []).some((t) => t.tag === tag) ? <option value={tag}>#{tag}</option> : null}
+                {(tags.data ?? []).map((t) => (
+                  <option key={t.tag} value={t.tag}>
+                    #{t.tag} ({formatCount(t.txn_count)})
+                  </option>
+                ))}
+              </select>
+            )}
+          </Field>
           <div className="flex items-end gap-2">
             <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm text-ink">
               <input
@@ -172,31 +187,9 @@ function FilterError({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function TagFilter({ initial, onApply }: { initial: string; onApply: (tag: string) => void }) {
-  const [draft, setDraft] = useState(initial);
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    onApply(draft.trim());
-  }
-  return (
-    <form onSubmit={submit} className="min-w-0">
-      <Field label="Tag">
-        <div className="flex gap-2">
-          <input
-            className={inputClass}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="e.g. vacation"
-            autoCapitalize="none"
-            enterKeyHint="search"
-          />
-          <Button type="submit" ariaLabel="Apply tag filter" className="shrink-0">
-            <Icon name="check" size={16} />
-          </Button>
-        </div>
-      </Field>
-    </form>
-  );
+/** Keep a selected month in the option list even if the view no longer has it (e.g. a stale link). */
+function withCurrent(months: string[], current: string): string[] {
+  return current && !months.includes(current) ? [current, ...months] : months;
 }
 
 function TransactionRow({ t }: { t: VTransaction }) {

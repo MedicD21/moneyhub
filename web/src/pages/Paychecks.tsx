@@ -70,6 +70,7 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
               <h2 className="text-base font-semibold text-ink">Payday {formatDate(p.period_start, 'weekday')}</h2>
               {current ? <Badge tone="accent">Current</Badge> : past ? <Badge tone="muted">Past</Badge> : <Badge tone="neutral">Upcoming</Badge>}
               {p.shortfall ? <Badge tone="danger">Shortfall</Badge> : null}
+              {current && p.overspent ? <Badge tone="danger">Overspent</Badge> : null}
             </div>
             <p className="mt-0.5 text-xs text-muted">
               Covers {formatDateRange(p.period_start, p.period_end)} · next payday {formatDate(p.next_pay_date, 'short')}
@@ -146,7 +147,7 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
                     <Money value={p.spent_so_far} />
                   </Row>
                   <Row label="Remaining" strong>
-                    <span className={cx(p.remaining_safe_to_spend < 0 ? 'text-danger' : 'text-ink')}>
+                    <span className={cx(p.overspent ? 'text-danger' : 'text-ink')}>
                       <Money value={p.remaining_safe_to_spend} />
                     </span>
                   </Row>

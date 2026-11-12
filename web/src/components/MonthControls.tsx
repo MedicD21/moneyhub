@@ -1,4 +1,4 @@
-import { addMonths, formatMonth } from '../lib/format';
+import { addMonths, formatCount, formatMonth } from '../lib/format';
 import { Icon } from './Icon';
 import { inputClass } from './ui';
 import { cx } from '../lib/cx';
@@ -30,9 +30,10 @@ export function MonthStepper({ value, onChange }: { value: string; onChange: (mo
   );
 }
 
-/** A <select> over months that exist in a view, newest first. */
+/** A <select> over months that exist in a view, newest first. `counts` (from a view) is shown next to each month. */
 export function MonthSelect({
   months,
+  counts,
   value,
   onChange,
   allLabel,
@@ -40,6 +41,7 @@ export function MonthSelect({
   id,
 }: {
   months: string[];
+  counts?: ReadonlyMap<string, number>;
   value: string;
   onChange: (month: string) => void;
   allLabel?: string;
@@ -52,6 +54,7 @@ export function MonthSelect({
       {months.map((m) => (
         <option key={m} value={m}>
           {formatMonth(m)}
+          {counts?.has(m) ? ` (${formatCount(counts.get(m))})` : ''}
         </option>
       ))}
     </select>
