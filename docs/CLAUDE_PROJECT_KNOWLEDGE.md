@@ -25,7 +25,7 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `bill_occurrences` | bill_id, due_date, expected_amount, paid_amount, paid_date, status (`due`/`paid`/`partial`/`skipped`), transaction_id | created by `ensure_bill_occurrences()` (daily cron) |
 | `debts` | name, kind, account_id (if a tracked card/loan account), apr (24.990 = 24.99%), min_payment, due_day, credit_limit, promo_apr, promo_ends | min_payment changes flow to the linked bill's amount |
 | `debt_balances` | debt_id, as_of_date, balance (owed, positive), import_batch_id | insert only, never overwrite |
-| `set_asides` | name, per_paycheck | |
+| `set_asides` | name, per_paycheck, cap, start_date, opening_balance, category_id, is_active | Rollover envelope: +per_paycheck each payday (stops at cap; null cap = unlimited). Spending draws it down when `transactions.set_aside_id` is set, or (untagged) the txn's category = `category_id`. Balance is derived, never stored. Drawn spending is not counted as discretionary |
 | `debt_plans` | name, strategy, extra_monthly, assumptions, summary, schedule, balances_as_of, is_active | only one active |
 | `app_settings` | owner_id, timezone, low_balance_threshold, stale_after_days | one row |
 
@@ -48,6 +48,7 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `v_bill_month_totals` | per due_month: expected_total, paid_total, remaining_total, counts |
 | `v_app_info` | today (owner's time zone), current_month, timezone, stale_after_days |
 | `v_pay_periods` | period_offset −2…+6 with every paycheck_plan column |
+| `v_set_asides` | set-asides with balance (rollover, can be negative if overspent), cap, room_left, at_cap, current_contribution |
 | `v_pay_period_forecast` / `pay_period_forecast(periods, lookahead)` | per period from today: safe_to_spend (levelized, covers short paychecks and bill clusters), max_safe_to_spend, hold_for_later (+ = keep back, − = uses earlier holds), carry_out, binding_date, shortfall. Anchored to real cash; a paycheck counts once its deposit transaction is imported |
 | `v_debt_balance_history`, `v_active_debt_plan`, `v_debt_plan_schedule`, `v_debt_plan_projection` | debt charts |
 | `pay_dates(start, end)` | paydays for active income sources |
@@ -147,6 +148,11 @@ insert into debt_balances (debt_id, as_of_date, balance)
 values ((select id from debts where name = 'Visa'), '2026-03-01', 1840.66);
 
 insert into set_asides (name, per_paycheck) values ('Emergency fund', 150);
+-- Rollover envelope with a cap, drawing from a category:
+insert into set_asides (name, per_paycheck, cap, category_id)
+values ('Car & fuel', 50, 350, (select id from categories where name = 'Gas'));
+-- Tag one-off spending to an envelope:
+update transactions set set_aside_id = (select id from set_asides where name = 'Car & fuel') where id = '...';
 ```
 
 ### Save a debt plan ("save this plan")

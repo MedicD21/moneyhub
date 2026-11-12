@@ -410,7 +410,30 @@ export type PaycheckSetAsideItem = {
   type: 'set_aside';
   id: Uuid;
   name: string;
+  /** contribution this payday (reduced when the cap is reached) */
   amount: number;
+  per_paycheck: number;
+  cap: number | null;
+  /** envelope balance after this payday's contribution (assumes no further spending) */
+  balance_after: number;
+  /** contribution was reduced or stopped by the cap */
+  capped: boolean;
+};
+
+/** public.v_set_asides: set-asides with their running (rollover) balance */
+export type VSetAside = {
+  id: Uuid;
+  name: string;
+  per_paycheck: number;
+  cap: number | null;
+  is_active: boolean;
+  start_date: IsoDate;
+  category_id: Uuid | null;
+  category_name: string | null;
+  balance: number;
+  current_contribution: number;
+  room_left: number | null;
+  at_cap: boolean;
 };
 
 export type PaycheckExtraDebtItem = {
@@ -517,6 +540,7 @@ export type Database = {
       v_pay_periods: ReadOnlyView<VPayPeriod>;
       v_dashboard: ReadOnlyView<VDashboard>;
       v_pay_period_forecast: ReadOnlyView<VPayPeriodForecast>;
+      v_set_asides: ReadOnlyView<VSetAside>;
     };
     Functions: { [_ in never]: never };
     Enums: { [_ in never]: never };
