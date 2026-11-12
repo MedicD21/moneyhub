@@ -11,8 +11,8 @@
 --                      + (current period only) overdue unpaid occurrences
 --                      + projected occurrences not yet generated (>= this month)
 --   minimums_total   = debt minimums whose due_day falls in the period, less
---                      payments already linked to that debt (debt_id) in the
---                      month before the due date, capped at the debt's balance
+--                      payments already linked to that debt (debt_id) since the
+--                      previous due date, capped at the debt's balance
 --   set_asides_total = sum of active set_asides.per_paycheck
 --   extra_debt       = active debt_plans.extra_monthly x 12 / paydays per year
 --   safe_to_spend    = expected_net - bills - minimums - set_asides - extra_debt
@@ -34,6 +34,7 @@ returns table (
   shortfall                boolean,
   spent_so_far             numeric,
   remaining_safe_to_spend  numeric,
+  overspent                boolean,
   items                    jsonb
 )
 language plpgsql
@@ -97,6 +98,7 @@ begin
     from public.bill_occurrences o
     join public.bills b on b.id = o.bill_id
     where o.status in ('due','partial')
+      and b.is_active
       and ((o.due_date >= v_start and o.due_date < v_next)
            or (v_current and o.due_date < v_start))
   ),
@@ -129,7 +131,10 @@ begin
                        from public.transactions t
                       where t.debt_id = d.id
                         and t.amount < 0
-                        and t.txn_date >  (dd - interval '1 month')::date
+                        and t.txn_date >  public.clamp_day(
+                                              extract(year  from dd - interval '1 month')::int,
+                                              extract(month from dd - interval '1 month')::int,
+                                              d.due_day)
                         and t.txn_date <= dd), 0) as paid
     from public.debts d
     left join public.v_debts vd on vd.debt_id = d.id
@@ -198,6 +203,7 @@ begin
   shortfall               := v_safe < 0;
   spent_so_far            := v_spent;
   remaining_safe_to_spend := v_safe - v_spent;
+  overspent               := v_safe - v_spent < 0;
   items                   := i_income || i_bills || i_mins || i_sets || i_extra;
   return next;
 end;
@@ -247,6 +253,7 @@ select
   pp.spent_so_far,
   pp.remaining_safe_to_spend,
   pp.shortfall,
+  pp.overspent,
   rq.review_queue_count,
   age.oldest_data_days,
   age.accounts_without_snapshot,
@@ -272,13 +279,13 @@ cross join lateral (
 cross join lateral (
   select count(*) as bills_due_7d_count, coalesce(sum(bs.remaining_amount), 0) as bills_due_7d_total
   from public.v_bill_status bs
-  where bs.status in ('due','partial')
+  where bs.status in ('due','partial') and bs.bill_is_active
     and bs.due_date between public.app_today() and public.app_today() + 7
 ) due7
 cross join lateral (
   select count(*) as overdue_bills_count, coalesce(sum(bs.remaining_amount), 0) as overdue_bills_total
   from public.v_bill_status bs
-  where bs.overdue
+  where bs.overdue and bs.bill_is_active
 ) od
 left join lateral (
   select pd.pay_date as next_payday, sum(pd.expected_net) as next_payday_amount

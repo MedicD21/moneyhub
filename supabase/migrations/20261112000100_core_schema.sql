@@ -164,6 +164,8 @@ create table public.transactions (
   bill_occurrence_id uuid,
   debt_id            uuid,
   note               text,
+  pending_txn_date   date,         -- set automatically when a pending row posts: its date while pending
+  posted_at          timestamptz,  -- set automatically when a pending row posts
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now(),
   unique (account_id, fingerprint, occurrence)
@@ -364,28 +366,120 @@ $$;
 -- Integrity triggers
 -- ---------------------------------------------------------------------------
 
--- Undoing an import (deleting a batch cascades to its transactions) must also
--- un-pay any bill occurrence those transactions paid. Without this the FK's
--- ON DELETE SET NULL would leave the occurrence marked 'paid' with no payment.
-create or replace function public.revert_bill_occurrence_on_txn_delete()
+-- Record when a pending transaction posts (used by the balance views to know
+-- whether the row was inside an earlier balance snapshot).
+create or replace function public.track_transaction_posting()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  update public.bill_occurrences
-     set status = 'due', paid_amount = null, paid_date = null, transaction_id = null
-   where transaction_id = old.id
-     and status in ('paid','partial');
-  return old;
+  if old.status = 'pending' and new.status = 'posted' then
+    new.posted_at        := now();
+    new.pending_txn_date := coalesce(old.pending_txn_date, old.txn_date);
+  end if;
+  return new;
 end;
 $$;
 
-create trigger revert_bill_occurrence
-  before delete on public.transactions
-  for each row execute function public.revert_bill_occurrence_on_txn_delete();
+create trigger track_transaction_posting
+  before update of status on public.transactions
+  for each row execute function public.track_transaction_posting();
 
--- Keep future, still-due occurrences in sync with their bill.
+-- Is transaction r OUTSIDE (not yet reflected in) a balance snapshot taken as of
+-- p_as_of and recorded at p_snap_created?
+--   Bank balance excludes pending (default):
+--     outside if still pending, dated after the snapshot, dated on the snapshot
+--     day but recorded after it, or it was still pending when the snapshot was
+--     recorded (posted_at later).
+--   Bank balance includes pending:
+--     outside if its original date (the pending date if it was pending) is
+--     after the snapshot, or it is on the snapshot day and recorded after it.
+-- Rows written in the same transaction as the snapshot (commit_screenshot_import)
+-- share its timestamp and count as inside.
+create or replace function public.txn_outside_snapshot(
+  p_status text, p_txn_date date, p_pending_txn_date date, p_posted_at timestamptz,
+  p_created_at timestamptz, p_as_of date, p_snap_created timestamptz, p_includes_pending boolean)
+returns boolean
+language sql
+immutable
+parallel safe
+set search_path = ''
+as $$
+  select case
+    when p_includes_pending then
+         coalesce(p_pending_txn_date, p_txn_date) > p_as_of
+      or (coalesce(p_pending_txn_date, p_txn_date) = p_as_of and p_created_at > p_snap_created)
+    else
+         p_status = 'pending'
+      or p_txn_date > p_as_of
+      or (p_txn_date = p_as_of and p_created_at > p_snap_created)
+      or (p_posted_at is not null and p_posted_at > p_snap_created)
+  end;
+$$;
+
+-- Bill occurrence payment state is derived from ALL transactions linked to it
+-- (transactions.bill_occurrence_id), so partial payments, undo (batch delete)
+-- and re-linking always recompute correctly. Outflows count as payment,
+-- refunds linked to the occurrence reduce it.
+create or replace function public.recalc_bill_occurrence(p_occurrence_id uuid)
+returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_paid   numeric(12,2);
+  v_date   date;
+  v_last   uuid;
+  v_n      int;
+begin
+  if p_occurrence_id is null then return; end if;
+
+  select -sum(t.amount), max(t.txn_date), count(*),
+         (array_agg(t.id order by t.txn_date desc, t.created_at desc))[1]
+    into v_paid, v_date, v_n, v_last
+  from public.transactions t
+  where t.bill_occurrence_id = p_occurrence_id;
+
+  update public.bill_occurrences o
+     set paid_amount    = case when v_n > 0 then greatest(v_paid, 0) end,
+         paid_date      = case when v_n > 0 then v_date end,
+         transaction_id = v_last,
+         status = case
+                    when v_n = 0 or coalesce(v_paid, 0) <= 0
+                      then case when o.status = 'skipped' then 'skipped' else 'due' end
+                    when b.is_variable or v_paid >= o.expected_amount then 'paid'
+                    else 'partial'
+                  end
+    from public.bills b
+   where o.id = p_occurrence_id and b.id = o.bill_id;
+end;
+$$;
+
+create or replace function public.transactions_bill_link_changed()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if tg_op in ('UPDATE','DELETE') then
+    perform public.recalc_bill_occurrence(old.bill_occurrence_id);
+  end if;
+  if tg_op in ('INSERT','UPDATE')
+     and new.bill_occurrence_id is distinct from (case when tg_op = 'UPDATE' then old.bill_occurrence_id end)
+     or (tg_op = 'UPDATE' and new.amount is distinct from old.amount) then
+    perform public.recalc_bill_occurrence(new.bill_occurrence_id);
+  end if;
+  return null;
+end;
+$$;
+
+-- Fires for cascaded deletes too (undoing an import batch un-pays its bills).
+create trigger transactions_bill_link_changed
+  after insert or delete or update of bill_occurrence_id, amount on public.transactions
+  for each row execute function public.transactions_bill_link_changed();
+
+-- Keep future, still-unpaid occurrences in sync with their bill.
 create or replace function public.sync_bill_occurrences_on_bill_change()
 returns trigger
 language plpgsql
@@ -393,20 +487,32 @@ set search_path = ''
 as $$
 begin
   if new.amount is distinct from old.amount then
-    update public.bill_occurrences
+    update public.bill_occurrences o
        set expected_amount = new.amount
-     where bill_id = new.id and status = 'due' and paid_amount is null
-       and due_date >= public.app_today();
+     where o.bill_id = new.id and o.status = 'due' and o.paid_amount is null
+       and o.due_date >= public.app_today();
   end if;
-  if old.is_active and not new.is_active then
-    delete from public.bill_occurrences
-     where bill_id = new.id and status = 'due' and paid_amount is null
-       and due_date >= public.app_today();
+
+  if (old.is_active and not new.is_active)
+     or new.frequency   is distinct from old.frequency
+     or new.due_day     is distinct from old.due_day
+     or new.anchor_date is distinct from old.anchor_date then
+    delete from public.bill_occurrences o
+     where o.bill_id = new.id and o.status = 'due' and o.paid_amount is null
+       and o.due_date >= public.app_today()
+       and not exists (select 1 from public.transactions t where t.bill_occurrence_id = o.id);
+  end if;
+
+  if new.is_active and (not old.is_active
+                        or new.frequency   is distinct from old.frequency
+                        or new.due_day     is distinct from old.due_day
+                        or new.anchor_date is distinct from old.anchor_date) then
+    perform public.ensure_bill_occurrences();
   end if;
   return new;
 end;
 $$;
 
 create trigger sync_bill_occurrences
-  after update of amount, is_active on public.bills
+  after update of amount, is_active, frequency, due_day, anchor_date on public.bills
   for each row execute function public.sync_bill_occurrences_on_bill_change();

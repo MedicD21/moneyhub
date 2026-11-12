@@ -56,7 +56,9 @@ $$;
 --   skip    exact fingerprint already in the DB (k-th identical row maps to occurrence k)
 --   update  existing row should change: pending -> posted (existing_transaction_id)
 --   ask     same amount within ±3 days but different description -> ask the user
---   insert  new transaction (insert_occurrence is the occurrence number to use)
+--   insert  new transaction
+-- insert_occurrence = the occurrence number the row will get (insert, ask, and
+-- update rows whose fingerprint changes).
 -- ---------------------------------------------------------------------------
 create or replace function public.preview_screenshot_import(p_account_id uuid, p_rows jsonb)
 returns table (
@@ -90,8 +92,9 @@ declare
   rule         record;
   v_fp         text;
   v_claimed    uuid[] := '{}';
-  v_planned    jsonb  := '{}';   -- fingerprint -> inserts already planned in this preview
+  v_planned    jsonb  := '{}';   -- fingerprint -> occurrence numbers already planned in this preview
   v_next_occ   int;
+  v_new_fp     text;
 begin
   if not exists (select 1 from public.accounts a where a.id = p_account_id) then
     raise exception 'Unknown account_id %', p_account_id using errcode = 'foreign_key_violation';
@@ -170,6 +173,14 @@ begin
         v_claimed := v_claimed || ex.id;
         existing_transaction_id := ex.id; existing_txn_date := ex.txn_date;
         existing_description := ex.description_raw; existing_status := ex.status;
+        -- the row takes the screenshot's date/description, so it needs a free
+        -- occurrence number under its new fingerprint
+        select coalesce(max(t.occurrence), 0) into v_next_occ
+        from public.transactions t
+        where t.account_id = p_account_id and t.fingerprint = v_fp and t.id <> ex.id;
+        v_next_occ := v_next_occ + coalesce((v_planned->>v_fp)::int, 0) + 1;
+        v_planned  := jsonb_set(v_planned, array[v_fp], to_jsonb(coalesce((v_planned->>v_fp)::int, 0) + 1));
+        insert_occurrence := v_next_occ;
         action := 'update'; reason := 'pending transaction has posted';
         return next;
         continue;
@@ -177,6 +188,7 @@ begin
     end if;
 
     -- 3. near match: same amount within ±3 days, different description
+    ex := null;
     select t.id, t.txn_date, t.description_raw, t.status into ex
     from public.transactions t
     where t.account_id = p_account_id
@@ -187,7 +199,16 @@ begin
     order by abs(t.txn_date - r.d), t.txn_date
     limit 1;
 
-    if found then
+    -- next free occurrence number for this fingerprint (reserved for both
+    -- 'ask' and 'insert' rows so a resolved 'ask' can never collide)
+    select coalesce(max(t.occurrence), 0) into v_next_occ
+    from public.transactions t
+    where t.account_id = p_account_id and t.fingerprint = v_fp;
+    v_next_occ := v_next_occ + coalesce((v_planned->>v_fp)::int, 0) + 1;
+    v_planned  := jsonb_set(v_planned, array[v_fp], to_jsonb(coalesce((v_planned->>v_fp)::int, 0) + 1));
+    insert_occurrence := v_next_occ;
+
+    if ex.id is not null then
       existing_transaction_id := ex.id; existing_txn_date := ex.txn_date;
       existing_description := ex.description_raw; existing_status := ex.status;
       action := 'ask'; reason := 'same amount within 3 days but a different description';
@@ -195,13 +216,7 @@ begin
       continue;
     end if;
 
-    -- 4. new row: occurrence = next free number for this fingerprint
-    select coalesce(max(t.occurrence), 0) into v_next_occ
-    from public.transactions t
-    where t.account_id = p_account_id and t.fingerprint = v_fp;
-    v_next_occ := v_next_occ + coalesce((v_planned->>v_fp)::int, 0) + 1;
-    v_planned  := jsonb_set(v_planned, array[v_fp], to_jsonb(coalesce((v_planned->>v_fp)::int, 0) + 1));
-
+    -- 4. new row
     action := 'insert';
     insert_occurrence := v_next_occ;
     reason := case when v_next_occ > 1 then 'new (identical to an existing transaction; occurrence '
@@ -260,7 +275,11 @@ declare
   v_max_date     date;
   v_inserted_ids uuid[] := '{}';
   v_updated_ids  uuid[] := '{}';
-  v_check        record;
+  v_chk_diff     numeric;
+  v_chk_cause    text;
+  v_chk_expected numeric;
+  v_chk_actual   numeric;
+  v_chk_found    boolean := false;
   v_tags         text[];
   v_needs_review boolean;
   v_question     text;
@@ -311,9 +330,27 @@ begin
          set status          = 'posted',
              txn_date        = p.txn_date,
              description_raw = p.description_raw,
+             occurrence      = coalesce(p.insert_occurrence, t.occurrence),
              merchant        = coalesce(nullif(v_row->>'merchant', ''), t.merchant, v_rule.merchant),
              category_id     = coalesce(v_cat_id, t.category_id, v_rule.category_id),
-             note            = coalesce(nullif(v_row->>'note', ''), t.note)
+             tags            = coalesce(
+                                 (select array_agg(x) from jsonb_array_elements_text(
+                                    case when jsonb_typeof(v_row->'tags') = 'array' then v_row->'tags' end) x),
+                                 t.tags),
+             debt_id         = coalesce(nullif(v_row->>'debt_id', '')::uuid, t.debt_id),
+             note            = coalesce(nullif(v_row->>'note', ''), t.note),
+             needs_review    = coalesce(
+                                 (v_row->>'needs_review')::boolean,
+                                 case when coalesce(v_cat_id, t.category_id, v_rule.category_id) is null then true
+                                      when t.review_question = 'Which category is this?' then false
+                                      else t.needs_review end),
+             review_question = coalesce(
+                                 nullif(v_row->>'review_question', ''),
+                                 case when coalesce((v_row->>'needs_review')::boolean,
+                                                    case when coalesce(v_cat_id, t.category_id, v_rule.category_id) is null then true
+                                                         when t.review_question = 'Which category is this?' then false
+                                                         else t.needs_review end)
+                                      then coalesce(t.review_question, 'Which category is this?') end)
        where t.id = p.existing_transaction_id;
       v_upd := v_upd + 1;
       v_updated_ids := v_updated_ids || p.existing_transaction_id;
@@ -360,8 +397,10 @@ begin
    where id = v_batch_id;
 
   if v_snapshot_id is not null then
-    select bc.difference, bc.likely_cause, bc.expected_balance, bc.actual_balance into v_check
+    select bc.difference, bc.likely_cause, bc.expected_balance, bc.actual_balance
+      into v_chk_diff, v_chk_cause, v_chk_expected, v_chk_actual
     from public.v_balance_check bc where bc.snapshot_id = v_snapshot_id;
+    v_chk_found := found;
   end if;
 
   return jsonb_build_object(
@@ -373,13 +412,13 @@ begin
     'updated_ids',            to_jsonb(v_updated_ids),
     'balance_snapshot_id',    v_snapshot_id,
     'balance_check',          case when v_snapshot_id is null then null
-                                   when v_check.difference is null then
+                                   when not v_chk_found then
                                      jsonb_build_object('note', 'first snapshot for this account; nothing to compare')
                                    else jsonb_build_object(
-                                     'difference', v_check.difference,
-                                     'expected_balance', v_check.expected_balance,
-                                     'actual_balance', v_check.actual_balance,
-                                     'likely_cause', v_check.likely_cause) end,
+                                     'difference', v_chk_diff,
+                                     'expected_balance', v_chk_expected,
+                                     'actual_balance', v_chk_actual,
+                                     'likely_cause', v_chk_cause) end,
     'bill_match_candidates',  (select count(*) from public.v_bill_match_candidates m
                                 where m.import_batch_id = v_batch_id and m.rank = 1),
     'needs_review',           (select count(*) from public.transactions t
@@ -392,7 +431,9 @@ comment on function public.commit_screenshot_import(uuid, jsonb, numeric, numeri
 
 -- ---------------------------------------------------------------------------
 -- mark_bill_paid: link a payment transaction to a bill occurrence.
--- paid if the total paid covers expected (or the bill is variable), else partial.
+-- Paid/partial status and paid_amount are recomputed from every transaction
+-- linked to the occurrence (recalc_bill_occurrence), so several partial
+-- payments add up, undo works, and calling this twice changes nothing.
 -- ---------------------------------------------------------------------------
 create or replace function public.mark_bill_paid(p_occurrence_id uuid, p_transaction_id uuid)
 returns public.bill_occurrences
@@ -401,10 +442,8 @@ security invoker
 set search_path = ''
 as $$
 declare
-  o      public.bill_occurrences;
-  t      public.transactions;
-  v_var  boolean;
-  v_paid numeric(12,2);
+  o public.bill_occurrences;
+  t public.transactions;
 begin
   select * into o from public.bill_occurrences where id = p_occurrence_id for update;
   if not found then raise exception 'Unknown bill occurrence %', p_occurrence_id; end if;
@@ -413,22 +452,17 @@ begin
   if t.bill_occurrence_id is not null and t.bill_occurrence_id <> p_occurrence_id then
     raise exception 'Transaction % is already linked to occurrence %', p_transaction_id, t.bill_occurrence_id;
   end if;
-  if o.transaction_id = p_transaction_id then
-    return o;  -- already linked; idempotent
+  if t.amount >= 0 then
+    raise exception 'Transaction % is not money out (amount %)', p_transaction_id, t.amount;
   end if;
 
-  select b.is_variable into v_var from public.bills b where b.id = o.bill_id;
-  v_paid := coalesce(o.paid_amount, 0) + abs(t.amount);
+  if t.bill_occurrence_id is null then
+    update public.transactions set bill_occurrence_id = p_occurrence_id where id = p_transaction_id;
+  end if;
+  -- the trigger on transactions recalculates; recalc again in case it was already linked
+  perform public.recalc_bill_occurrence(p_occurrence_id);
 
-  update public.bill_occurrences
-     set paid_amount    = v_paid,
-         paid_date      = t.txn_date,
-         transaction_id = p_transaction_id,
-         status         = case when v_var or v_paid >= o.expected_amount then 'paid' else 'partial' end
-   where id = p_occurrence_id
-  returning * into o;
-
-  update public.transactions set bill_occurrence_id = p_occurrence_id where id = p_transaction_id;
+  select * into o from public.bill_occurrences where id = p_occurrence_id;
   return o;
 end;
 $$;

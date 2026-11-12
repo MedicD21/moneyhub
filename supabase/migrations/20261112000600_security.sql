@@ -36,6 +36,9 @@ grant select on all tables in schema public to authenticated;
 alter default privileges in schema public revoke all on tables    from anon, authenticated, public;
 alter default privileges in schema public revoke all on functions from anon, authenticated, public;
 alter default privileges in schema public revoke all on sequences from anon, authenticated, public;
+-- PUBLIC's EXECUTE on new functions comes from the global (not per-schema)
+-- default, so it must be revoked globally for the migration role.
+alter default privileges revoke execute on functions from public;
 
 -- Function privileges
 revoke execute on all functions in schema public from public, anon, authenticated;
@@ -53,9 +56,10 @@ grant execute on function
   public.paycheck_plan(date),
   public.match_merchant_rule(text),
   public.descriptions_match(text, text),
-  public.preview_screenshot_import(uuid, jsonb)
+  public.preview_screenshot_import(uuid, jsonb),
+  public.txn_outside_snapshot(text, date, date, timestamptz, timestamptz, date, timestamptz, boolean)
 to authenticated;
 
 -- Explicitly NOT granted to authenticated/anon (writers):
 --   ensure_bill_occurrences, commit_screenshot_import, mark_bill_paid,
---   bootstrap_owner, and the trigger functions.
+--   recalc_bill_occurrence, bootstrap_owner, and the trigger functions.

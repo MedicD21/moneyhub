@@ -41,22 +41,21 @@ left join public.categories c on c.id = t.category_id;
 
 -- ---------------------------------------------------------------------------
 -- v_account_balances
--- estimated_balance (signed) = last snapshot (signed)
---   + posted transactions dated after the snapshot
---   + pending transactions (any date) when the bank's balance excludes pending,
---     or pending dated after the snapshot when it includes them.
+-- estimated_balance (signed) = last snapshot (signed) + every transaction that
+-- is outside that snapshot (see txn_outside_snapshot: newer rows, rows still
+-- pending when the bank excludes pending, rows that posted after the snapshot).
 -- ---------------------------------------------------------------------------
 create view public.v_account_balances with (security_invoker = true) as
 with last_snap as (
   select distinct on (bs.account_id)
-         bs.account_id, bs.id as snapshot_id, bs.as_of_date, bs.balance, bs.available
+         bs.account_id, bs.id as snapshot_id, bs.as_of_date, bs.balance, bs.available, bs.created_at
   from public.balance_snapshots bs
   order by bs.account_id, bs.as_of_date desc, bs.created_at desc, bs.id desc
 ),
 base as (
   select a.id, a.name, a.institution, a.kind, a.last4, a.is_active, a.balance_includes_pending,
          a.kind in ('credit_card','loan') as is_liability,
-         ls.snapshot_id, ls.as_of_date, ls.balance as snap_display, ls.available,
+         ls.snapshot_id, ls.as_of_date, ls.balance as snap_display, ls.available, ls.created_at as snap_created,
          case when a.kind in ('credit_card','loan') then -ls.balance else ls.balance end as snap_signed
   from public.accounts a
   left join last_snap ls on ls.account_id = a.id
@@ -86,20 +85,21 @@ select
 from base b
 cross join lateral (
   select
-    coalesce(sum(tx.amount) filter (where
-        (tx.txn_date > b.as_of_date and (tx.status = 'posted' or b.balance_includes_pending))
-     or (tx.status = 'pending' and not b.balance_includes_pending)), 0) as since_snapshot,
+    coalesce(sum(tx.amount) filter (where public.txn_outside_snapshot(
+        tx.status, tx.txn_date, tx.pending_txn_date, tx.posted_at, tx.created_at,
+        b.as_of_date, b.snap_created, b.balance_includes_pending)), 0) as since_snapshot,
     coalesce(sum(tx.amount) filter (where tx.status = 'pending'), 0)  as pending_total
   from public.transactions tx
   where tx.account_id = b.id
 ) t;
 
 -- ---------------------------------------------------------------------------
--- v_balance_check: for each snapshot after an account's first one,
---   expected = previous snapshot + transactions dated (prev.as_of, this.as_of]
---   difference = actual - expected  (= net amount of transactions missing or
---   misread in the DB; 0 means the data reconciles).
--- Pending rows count only when the account's displayed balance includes pending.
+-- v_balance_check: for each snapshot after an account's first one.
+--   Consistent data means both snapshots imply the same current balance:
+--     prev + outside(prev) = this + outside(this)
+--   expected_balance = prev + outside(prev) - outside(this)
+--   difference = actual - expected = net amount of transactions missing or
+--   misread in the DB (0 = reconciles).
 -- ---------------------------------------------------------------------------
 create view public.v_balance_check with (security_invoker = true) as
 with s as (
@@ -108,49 +108,64 @@ with s as (
          case when a.kind in ('credit_card','loan') then -bs.balance else bs.balance end as signed_balance,
          lag(bs.id) over w         as prev_id,
          lag(bs.as_of_date) over w as prev_as_of,
+         lag(bs.created_at) over w as prev_created,
          lag(case when a.kind in ('credit_card','loan') then -bs.balance else bs.balance end) over w as prev_signed,
          row_number() over (partition by bs.account_id
                             order by bs.as_of_date desc, bs.created_at desc, bs.id desc) as recency
   from public.balance_snapshots bs
   join public.accounts a on a.id = bs.account_id
   window w as (partition by bs.account_id order by bs.as_of_date, bs.created_at, bs.id)
+),
+calc as (
+  select s.*, w.txn_sum, w.txn_count, w.pending_between,
+         s.prev_signed + w.txn_sum as expected_balance,
+         s.signed_balance - (s.prev_signed + w.txn_sum) as difference
+  from s
+  cross join lateral (
+    select
+      coalesce(sum(t.amount) filter (where o.prev_out and not o.cur_out), 0)
+        - coalesce(sum(t.amount) filter (where o.cur_out and not o.prev_out), 0) as txn_sum,
+      count(*) filter (where o.prev_out <> o.cur_out)                         as txn_count,
+      coalesce(sum(t.amount) filter (where t.status = 'pending'
+                                       and t.txn_date > s.prev_as_of
+                                       and t.txn_date <= s.as_of_date), 0)    as pending_between
+    from public.transactions t
+    cross join lateral (
+      select
+        public.txn_outside_snapshot(t.status, t.txn_date, t.pending_txn_date, t.posted_at, t.created_at,
+                                    s.prev_as_of, s.prev_created, s.balance_includes_pending) as prev_out,
+        public.txn_outside_snapshot(t.status, t.txn_date, t.pending_txn_date, t.posted_at, t.created_at,
+                                    s.as_of_date, s.created_at, s.balance_includes_pending)   as cur_out
+    ) o
+    where t.account_id = s.account_id
+  ) w
+  where s.prev_id is not null
 )
 select
-  s.id                 as snapshot_id,
-  s.account_id,
-  s.account_name,
-  s.import_batch_id,
-  s.prev_id            as prev_snapshot_id,
-  s.prev_as_of         as prev_as_of_date,
-  s.prev_signed        as prev_balance,
-  s.as_of_date,
-  w.txn_sum            as transactions_between,
-  w.txn_count,
-  w.pending_between,
-  s.prev_signed + w.txn_sum                    as expected_balance,
-  s.signed_balance                             as actual_balance,
-  s.signed_balance - (s.prev_signed + w.txn_sum) as difference,
-  s.recency = 1        as is_latest,
+  c.id                 as snapshot_id,
+  c.account_id,
+  c.account_name,
+  c.import_batch_id,
+  c.prev_id            as prev_snapshot_id,
+  c.prev_as_of         as prev_as_of_date,
+  c.prev_signed        as prev_balance,
+  c.as_of_date,
+  c.txn_sum            as transactions_between,
+  c.txn_count,
+  c.pending_between,
+  c.expected_balance,
+  c.signed_balance     as actual_balance,
+  c.difference,
+  c.recency = 1        as is_latest,
   case
-    when s.signed_balance - (s.prev_signed + w.txn_sum) = 0 then 'ok'
-    when w.pending_between <> 0
-         and abs(s.signed_balance - (s.prev_signed + w.txn_sum)) = abs(w.pending_between)
-      then 'pending timing: difference equals pending transactions in the window'
-    when mod(abs(s.signed_balance - (s.prev_signed + w.txn_sum)) * 100, 9) = 0
+    when c.difference = 0 then 'ok'
+    when c.pending_between <> 0 and abs(c.difference) = abs(c.pending_between)
+      then 'pending timing: difference equals pending transactions in the window (check balance_includes_pending)'
+    when mod(abs(c.difference) * 100, 9) = 0
       then 'possible transposed/misread digits (difference divisible by 9 cents) or a missing transaction'
     else 'missing or misread transaction'
   end as likely_cause
-from s
-cross join lateral (
-  select coalesce(sum(t.amount) filter (where t.status = 'posted' or s.balance_includes_pending), 0) as txn_sum,
-         count(*) filter (where t.status = 'posted' or s.balance_includes_pending)               as txn_count,
-         coalesce(sum(t.amount) filter (where t.status = 'pending'), 0)                         as pending_between
-  from public.transactions t
-  where t.account_id = s.account_id
-    and t.txn_date >  s.prev_as_of
-    and t.txn_date <= s.as_of_date
-) w
-where s.prev_id is not null;
+from calc c;
 
 -- ---------------------------------------------------------------------------
 -- v_month_spending: month x category. Excludes transfer-kind categories.
@@ -214,6 +229,7 @@ select
   b.autopay,
   b.is_variable,
   b.frequency,
+  b.is_active         as bill_is_active,
   b.pay_from_account_id,
   pa.name             as pay_from_account_name,
   b.category_id,
@@ -228,9 +244,10 @@ create view public.v_upcoming_bills with (security_invoker = true) as
 select *
 from public.v_bill_status
 where status in ('due','partial')
+  and bill_is_active
   and due_date <= public.app_today() + 30;
 comment on view public.v_upcoming_bills is
-  'Unpaid (due/partial) bill occurrences due within 30 days, including overdue ones.';
+  'Unpaid (due/partial) occurrences of active bills due within 30 days, including overdue ones.';
 
 create view public.v_monthly_bills_total with (security_invoker = true) as
 select
@@ -384,3 +401,39 @@ from (
   where t.amount < 0
     and t.bill_occurrence_id is null
 ) x;
+
+-- ---------------------------------------------------------------------------
+-- Small lookup views for the web app (so it never computes anything).
+-- ---------------------------------------------------------------------------
+create view public.v_app_info with (security_invoker = true) as
+select public.app_today()           as today,
+       date_trunc('month', public.app_today()::timestamp)::date as current_month,
+       s.timezone,
+       s.stale_after_days,
+       s.low_balance_threshold
+from (select 1) one
+left join public.app_settings s on s.id;
+
+-- Bill totals for each calendar month (active bills; skipped excluded).
+create view public.v_bill_month_totals with (security_invoker = true) as
+select due_month,
+       sum(expected_amount)                                         as expected_total,
+       coalesce(sum(paid_amount), 0)                                as paid_total,
+       sum(remaining_amount)                                        as remaining_total,
+       count(*)                                                     as occurrence_count,
+       count(*) filter (where status = 'paid')                      as paid_count,
+       count(*) filter (where overdue)                              as overdue_count
+from public.v_bill_status
+where status <> 'skipped' and bill_is_active
+group by due_month;
+
+create view public.v_tags with (security_invoker = true) as
+select tag, count(*) as txn_count
+from public.transactions t
+cross join lateral unnest(t.tags) tag
+group by tag;
+
+create view public.v_transaction_months with (security_invoker = true) as
+select date_trunc('month', t.txn_date::timestamp)::date as month, count(*) as txn_count
+from public.transactions t
+group by 1;

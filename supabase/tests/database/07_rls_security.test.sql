@@ -3,7 +3,10 @@
 -- callable from the API roles.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(68);
+-- Test-only: our migrations revoke EXECUTE on new functions from PUBLIC by
+-- default, which also covers pgTAP when it is installed after them.
+grant execute on all functions in schema extensions to anon, authenticated;
+select plan(70);
 
 -- Owner A (the app owner) and an unrelated user B
 insert into auth.users (id, email) values
@@ -35,6 +38,13 @@ select is(
     where n.nspname = 'public' and c.relkind = 'v'
       and not coalesce((select bool_or(o = 'security_invoker=true') from unnest(c.reloptions) o), false)),
   0, 'every view is security_invoker');
+
+-- Functions added by FUTURE migrations are not callable by the API roles by default
+create function public.zz_future_writer() returns int language sql as 'select 1';
+select ok(not has_function_privilege('anon', 'public.zz_future_writer()', 'execute'),
+          'a function created later is not executable by anon');
+select ok(not has_function_privilege('authenticated', 'public.zz_future_writer()', 'execute'),
+          'a function created later is not executable by authenticated');
 
 -- ============ authenticated as owner A ============
 set local role authenticated;

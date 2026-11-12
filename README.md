@@ -29,7 +29,7 @@ Web app (React, read-only, RLS) ──(select only)─────┘
 supabase/
   migrations/      7 migrations: schema, schedule functions, views, paycheck/dashboard,
                    Claude procedures, security (RLS + grants), pg_cron
-  tests/database/  pgTAP suite (169 assertions): every Phase 1 acceptance check,
+  tests/database/  pgTAP suite (189 assertions): every Phase 1 acceptance check,
                    plus the Phase 2 screenshot acceptance checks
   tests/local/     Supabase shim for running the suite on plain Postgres
   seed.sql         LOCAL demo data only (never push it to your real project)

@@ -4,8 +4,9 @@
 rejected by Postgres, and the category seed cannot run in a migration. Beyond that, ten
 logic gaps would have produced wrong numbers with no error. The biggest are credit-card
 balance signs, double-counted card payments, and a safe-to-spend that never goes down
-as you spend. All of these are fixed in the migrations and covered by tests (169 pgTAP
-assertions).
+as you spend. All of these are fixed in the migrations and covered by tests (189 pgTAP
+assertions). An independent second review then found 8 more defects in my own first
+draft; those are fixed too (section H).
 
 Confidence tags: **[Certain]** = reproduced or proven by a test, **[Likely]** = strong
 inference, **[Guessing]** = judgment call.
@@ -30,8 +31,8 @@ inference, **[Guessing]** = judgment call.
 | B4 | **Overdue bills vanish.** Only bills due inside the period were counted, so an unpaid bill from last period dropped out of the budget. **[Certain]** | The current period carries in unpaid overdue occurrences, flagged `overdue: true` in `items`. |
 | B5 | **Minimums already paid still subtracted.** **[Certain]** | A minimum is reduced by payments linked to that debt (`debt_id`) in the month before its due date, and capped at the current balance. |
 | B6 | **Future pay periods show no bills.** `v_pay_periods` goes 6 periods ahead (~12 weeks for biweekly, 6 months for monthly), but occurrences only exist 60 days out. **[Certain]** | `paycheck_plan` projects due dates from the bill schedule wherever no occurrence row exists yet (`projected: true`). |
-| B7 | **Undo left bills marked paid.** Deleting a batch cascades to its transactions, but the FK only nulls `bill_occurrences.transaction_id` and leaves status `paid`. **[Certain]** | A BEFORE DELETE trigger resets the occurrence to `due`. Tested in `02_import_batch_cascade`. |
-| B8 | **Pending vs posted balance.** Most banks' main balance excludes pending items; some include them. Using the wrong assumption makes every balance check fail by the pending total. **[Likely]** | `accounts.balance_includes_pending` (default false). `v_balance_check` uses it and also reports `pending_between`, plus a `likely_cause` that recognizes pending timing. |
+| B7 | **Undo left bills marked paid.** Deleting a batch cascades to its transactions, but the FK only nulls `bill_occurrences.transaction_id` and leaves status `paid`. **[Certain]** | An occurrence's paid amount and status are recomputed from *all* transactions linked to it whenever a link, amount or row changes. That covers undo, multiple partial payments, and idempotent re-marking. Tested in `02` and `10`. |
+| B8 | **Pending vs posted balance.** Most banks' main balance excludes pending items; some include them. A pending row that later posts (often keeping its original date) also crosses the snapshot boundary, and a date-window comparison then misreports it. **[Certain]** | `accounts.balance_includes_pending` (default false). Transactions record `posted_at` / `pending_txn_date` when they post (by trigger). `txn_outside_snapshot()` decides, per snapshot, whether each row is already reflected in it. `v_balance_check` compares the current balance implied by two consecutive snapshots, so pending timing no longer produces false alarms. It still reports `pending_between` and a `likely_cause`. |
 | B9 | **Paychecks-per-year.** `extra_debt = extra_monthly × 12 / paychecks per year` needs a definition when there are two income sources. A naive 365-day count also gives 27 biweekly paydays, which the test suite caught. **[Certain]** | Distinct paydays in a 364-day window: 26 / 52 / 24 / 12. Pay periods are defined by the union of all sources' paydays. |
 | B10 | **"Today" was UTC.** `current_date` on Supabase is UTC, so after 7–8 pm Eastern the app thinks it's tomorrow. **[Likely]** | `app_today()` uses `app_settings.timezone` (default America/New_York) everywhere. |
 
@@ -84,4 +85,30 @@ functions.
 4. **Pending→posted matching uses a heuristic:** same amount, ±3 days, description prefix or same first 5 characters, or same merchant rule. Two different merchants with the same amount and prefix in the same 3 days could be merged. The preview shows every `update` before anything is written. **[Likely]** rare.
 5. **`likely_cause` "divisible by 9"** is a weak hint for transposed digits. Treat it as a pointer, not a diagnosis. **[Certain]**
 6. **Bank holidays** are not modelled for paydays.
-7. **Tests ran on plain PostgreSQL 16** with a small Supabase shim (no Docker in the build environment), not on a live Supabase PG17 instance. The SQL uses only features available in both. The files are standard pgTAP and run unchanged with `supabase test db`. **[Likely]** no differences; run that command once to confirm.
+7. **Snapshot timing is based on when rows were recorded.** A transaction dated on a snapshot's day but recorded *after* it is treated as not yet in that balance. A genuinely missed row from that same day, found later, will therefore show up as a balance-check difference once. Earlier-dated backfills are treated as already included. **[Likely]** the right default for screenshots taken during the day.
+8. **Other edge cases the reviewer flagged, not fixed:**
+   - An income source or bill with a *future* `anchor_date` also generates dates before it. Use a real past payday, or keep a not-yet-started job inactive.
+   - Semimonthly days that clamp to the same date (e.g. `{28,31}` in February) give one payday that month.
+   - Two `debts` rows pointing at the same card, or the same card entered both as a linked debt and as an unlinked account, are double counted in `total_debt`.
+9. **Tests ran on plain PostgreSQL 16** with a small Supabase shim (no Docker in the build environment), not on a live Supabase PG17 instance. The SQL uses only features available in both. The files are standard pgTAP and run unchanged with `supabase test db`. **[Likely]** no differences; run that command once to confirm.
+
+## H. Defects found by an independent review of the first implementation (all fixed)
+
+A separate reviewer agent read the migrations cold and reproduced each of these with SQL.
+Each now has a regression test in `10_review_regressions.test.sql`.
+
+| # | Defect | Fix |
+|---|---|---|
+| H1 | `commit_screenshot_import` without a balance crashed (`record "v_check" is not assigned yet`). The original tests passed only because of call order. | Scalar variables. |
+| H2 | A pending row that posted with its original date moved across the snapshot boundary, giving a wrong estimate and a false "missing row". | `posted_at` / `pending_txn_date` + `txn_outside_snapshot()` (see B8). |
+| H3 | A pending→posted update ignored `debt_id`, `tags`, `needs_review` and `review_question`, so a paid minimum still counted. | The update applies every key. |
+| H4 | For due_day 29–31, a payment for the previous month counted toward this month's minimum. | The window is (previous due date, due date]. |
+| H5 | Partial payments tracked one transaction id: undo lost the other payment, and re-marking double counted. | Recompute from all linked transactions. |
+| H6 | Changing a bill's due day left stale occurrences on the old day, double counting. | The trigger also fires on frequency/due_day/anchor_date and regenerates. |
+| H7 | A pending→posted update could collide with an existing identical posted row (unique violation). | Update rows get the next free occurrence number. |
+| H8 | `ask` rows didn't reserve an occurrence number, so a resolved insert could collide. | Reserved. |
+| H9 | Functions added by *future* migrations would be executable by `anon` (PUBLIC's EXECUTE comes from the global default). | Global `alter default privileges … revoke execute … from public`. |
+
+Also added for the web app: `v_app_info`, `v_bill_month_totals`, `v_tags`,
+`v_transaction_months`, and the `overspent` flag (remaining safe-to-spend < 0).
+Inactive bills are excluded from upcoming/overdue counts and from `paycheck_plan`.

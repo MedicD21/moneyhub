@@ -62,7 +62,7 @@ once your data exists. Every test runs inside a transaction that is rolled back,
 ```bash
 npx supabase test db --linked
 ```
-Expected: `All tests successful … Tests=169 … Result: PASS`. This confirms the suite on
+Expected: `All tests successful … Tests=189 … Result: PASS`. This confirms the suite on
 Supabase's Postgres version (it was built and run on PG16 here).
 
 ## 4. Auth settings 🔑 ⏱ 5 min
@@ -214,5 +214,5 @@ for (const [m, path, body] of [
 | Add the Claude connector and Project | Your Claude account; OAuth consent |
 | Deploy to Vercel | Your Vercel account |
 | Run Phase 2 acceptance with real screenshots | Needs your real bank app |
-| Run the suite on hosted Supabase (`supabase test db --linked`) | Needs the linked project. It was run on local PG16 here (169/169 passing) |
+| Run the suite on hosted Supabase (`supabase test db --linked`) | Needs the linked project. It was run on local PG16 here (189/189 passing) |
 | Open a pull request | You didn't ask for one; the work is on branch `claude/friendly-edison-4majyc` |

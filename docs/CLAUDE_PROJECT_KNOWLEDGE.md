@@ -15,7 +15,7 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 |---|---|---|
 | `accounts` | name, institution, kind (`checking`/`savings`/`credit_card`/`loan`/`cash`), last4, balance_includes_pending, is_active | name is unique |
 | `import_batches` | account_id, source, screenshot_range_start/end, rows_inserted, rows_updated, notes | created by `commit_screenshot_import` |
-| `transactions` | account_id, import_batch_id, txn_date, description_raw, merchant, amount, status (`pending`/`posted`), category_id, tags, needs_review, review_question, occurrence, bill_occurrence_id, debt_id, note | `fingerprint` is generated; unique (account_id, fingerprint, occurrence) |
+| `transactions` | account_id, import_batch_id, txn_date, description_raw, merchant, amount, status (`pending`/`posted`), category_id, tags, needs_review, review_question, occurrence, bill_occurrence_id, debt_id, note | `fingerprint` is generated; unique (account_id, fingerprint, occurrence). `posted_at`/`pending_txn_date` are set automatically when a pending row posts. Never set them yourself. |
 | `balance_snapshots` | account_id, import_batch_id, as_of_date, balance, available | balance as displayed (cards/loans: owed, positive) |
 | `categories` | name, parent_name, kind (`expense`/`income`/`transfer`/`debt_payment`) | add only when I ask |
 | `merchant_rules` | pattern (case-insensitive substring), merchant, category_id, tags | longest matching pattern wins |
@@ -44,6 +44,8 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `v_monthly_bills_total` | monthly_total, autopay_monthly_total, variable_monthly_total, active_bill_count |
 | `v_debts` | balance, balance_as_of, balance_source, effective_apr, min_payment, next_due_date, utilization_pct |
 | `v_bill_match_candidates` | unmatched outflows that look like a bill payment (use rank = 1) |
+| `v_bill_month_totals` | per due_month: expected_total, paid_total, remaining_total, counts |
+| `v_app_info` | today (owner's time zone), current_month, timezone, stale_after_days |
 | `v_pay_periods` | period_offset −2…+6 with every paycheck_plan column |
 | `v_debt_balance_history`, `v_active_debt_plan`, `v_debt_plan_schedule`, `v_debt_plan_projection` | debt charts |
 | `pay_dates(start, end)` | paydays for active income sources |
@@ -96,6 +98,11 @@ from v_bill_match_candidates where import_batch_id = '<batch_id>' and rank = 1;
 
 select mark_bill_paid('<occurrence_id>', '<transaction_id>');
 ```
+`mark_bill_paid` can be called once per payment. Several partial payments add up, and calling it
+twice for the same pair changes nothing. If a bill was paid some way you can't see (cash, an
+untracked account), set it explicitly instead:
+`update bill_occurrences set status = 'paid', paid_date = '<date>' where id = '<occurrence_id>';`
+or `status = 'skipped'` for a month that doesn't apply.
 
 ### Answering a review question
 ```sql
@@ -116,7 +123,8 @@ select (select count(*) from transactions where import_batch_id = '<batch_id>') 
 -- after the user confirms:
 delete from import_batches where id = '<batch_id>';
 ```
-Deleting a batch also returns any bill it had marked paid to `due`.
+Deleting a batch also recomputes any bill its transactions paid (back to `due`, or `partial` if
+another payment remains).
 
 ### Setup by chat (examples)
 ```sql
