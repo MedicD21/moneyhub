@@ -20,7 +20,7 @@ import {
   isoToDayNumber,
   parseIsoDate,
 } from '../lib/format';
-import { Badge, Card, Money, PageHeader, Row } from '../components/ui';
+import { Badge, Card, CollapsibleCard, Money, PageHeader, Row } from '../components/ui';
 import { cx } from '../lib/cx';
 import { EmptyState, ErrorState, LoadingState, QueryState } from '../components/QueryState';
 import { ChartLegend, MoneyTooltip } from '../components/charts';
@@ -46,21 +46,33 @@ export default function Debts() {
   (debts.data ?? []).forEach((d, i) => colorIndex.set(d.debt_id, i));
   const colorFor = (debtId: string, fallback: number) => seriesColor(colorIndex.get(debtId) ?? fallback);
 
+  // Header counts only (no money math): how many rows each collapsed section holds.
+  const debtCount = debts.data?.length ?? null;
+  const historyDebtCount = history.data ? new Set(history.data.map((r) => r.debt_id)).size : null;
+
   return (
     <>
       <PageHeader title="Debts" description="Balances are amounts owed, as your lender shows them." />
 
-      <Card title="Debts">
+      <CollapsibleCard
+        title="Debts"
+        meta={debtCount !== null ? `${formatCount(debtCount)} debt${debtCount === 1 ? '' : 's'}` : null}
+      >
         <QueryState state={debts} label="debts" loadingLines={6} empty="No debts recorded.">
           {(rows) => <DebtsTable rows={rows} />}
         </QueryState>
-      </Card>
+      </CollapsibleCard>
 
-      <Card className="mt-4" title="Balance history" subtitle="Each recorded balance, per debt">
+      <CollapsibleCard
+        className="mt-4"
+        title="Balance history"
+        subtitle="Each recorded balance, per debt"
+        meta={historyDebtCount !== null ? `${formatCount(historyDebtCount)} debt${historyDebtCount === 1 ? '' : 's'}` : null}
+      >
         <QueryState state={history} label="balance history" loadingLines={6} empty="No balance history yet.">
           {(rows) => <HistoryCharts rows={rows} colorFor={colorFor} />}
         </QueryState>
-      </Card>
+      </CollapsibleCard>
 
       <Card className="mt-4" title="Active payoff plan">
         <QueryState state={plan} label="the active debt plan" empty="No active debt plan. Ask Claude to build one and mark it active.">

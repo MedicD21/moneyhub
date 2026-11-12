@@ -19,10 +19,11 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `balance_snapshots` | account_id, import_batch_id, as_of_date, balance, available | balance as displayed (cards/loans: owed, positive) |
 | `categories` | name, parent_name, kind (`expense`/`income`/`transfer`/`debt_payment`) | add only when I ask |
 | `merchant_rules` | pattern (case-insensitive substring), merchant, category_id, tags | longest matching pattern wins |
-| `income_sources` | name, frequency (`weekly`/`biweekly`/`semimonthly`/`monthly`), anchor_date (a real payday), semimonthly_days (e.g. `{15,31}`), weekend_adjust (`none`/`previous_business_day`/`next_business_day`), expected_net, deposit_account_id | |
-| `bills` | name, amount (positive), is_variable, frequency (`weekly`/`biweekly`/`monthly`/`quarterly`/`annual`), due_day, anchor_date, autopay, pay_from_account_id, category_id, match_pattern | monthly needs due_day; weekly/biweekly/quarterly/annual need anchor_date |
+| `income_sources` | name, frequency (`weekly`/`biweekly`/`every_6_weeks`/`semimonthly`/`monthly`), anchor_date (a real payday), semimonthly_days (e.g. `{15,31}`), weekend_adjust (`none`/`previous_business_day`/`next_business_day`), expected_net, deposit_account_id | a rotating pay pattern (long/long/short) = one `every_6_weeks` source per slot |
+| `pay_date_overrides` | income_source_id, scheduled_date, actual_date, actual_net, note | one-off moved/changed paycheck; actual_net null = keep expected_net, 0 = no pay; actual_date within 10 days |
+| `bills` | name, amount (positive), is_variable, frequency (`weekly`/`biweekly`/`monthly`/`quarterly`/`annual`), due_day, anchor_date, end_date, debt_id, autopay, pay_from_account_id, category_id, match_pattern | monthly needs due_day; weekly/biweekly/quarterly/annual need anchor_date. end_date = last payment (installments). debt_id = this bill is that debt's payment schedule (one per debt) |
 | `bill_occurrences` | bill_id, due_date, expected_amount, paid_amount, paid_date, status (`due`/`paid`/`partial`/`skipped`), transaction_id | created by `ensure_bill_occurrences()` (daily cron) |
-| `debts` | name, kind, account_id (if a tracked card/loan account), apr (24.990 = 24.99%), min_payment, due_day, credit_limit, promo_apr, promo_ends | |
+| `debts` | name, kind, account_id (if a tracked card/loan account), apr (24.990 = 24.99%), min_payment, due_day, credit_limit, promo_apr, promo_ends | min_payment changes flow to the linked bill's amount |
 | `debt_balances` | debt_id, as_of_date, balance (owed, positive), import_batch_id | insert only, never overwrite |
 | `set_asides` | name, per_paycheck | |
 | `debt_plans` | name, strategy, extra_monthly, assumptions, summary, schedule, balances_as_of, is_active | only one active |
@@ -39,14 +40,15 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `v_review_queue` | v_transactions where needs_review |
 | `v_month_spending` | month × category: total_out, total_in, net, txn_count (transfers excluded) |
 | `v_cash_flow` | month: income, spending, net, uncategorized_count |
-| `v_bill_status` | occurrences: bill_name, due_date, due_month, expected/paid/remaining_amount, status, days_until_due, overdue |
+| `v_bill_status` | occurrences: bill_name, due_date, due_month, expected/paid/remaining_amount, status, days_until_due, overdue, debt_id, end_date |
 | `v_upcoming_bills` | unpaid occurrences due within 30 days, overdue included |
 | `v_monthly_bills_total` | monthly_total, autopay_monthly_total, variable_monthly_total, active_bill_count |
-| `v_debts` | balance, balance_as_of, balance_source, effective_apr, min_payment, next_due_date, utilization_pct |
+| `v_debts` | balance, balance_as_of, balance_source, effective_apr, min_payment, next_due_date, utilization_pct, payment_bill_id, final_payment_date, overdue_amount |
 | `v_bill_match_candidates` | unmatched outflows that look like a bill payment (use rank = 1) |
 | `v_bill_month_totals` | per due_month: expected_total, paid_total, remaining_total, counts |
 | `v_app_info` | today (owner's time zone), current_month, timezone, stale_after_days |
 | `v_pay_periods` | period_offset −2…+6 with every paycheck_plan column |
+| `v_pay_period_forecast` / `pay_period_forecast(periods, lookahead)` | per period from today: safe_to_spend (levelized, covers short paychecks and bill clusters), max_safe_to_spend, hold_for_later (+ = keep back, − = uses earlier holds), carry_out, binding_date, shortfall. Anchored to real cash; a paycheck counts once its deposit transaction is imported |
 | `v_debt_balance_history`, `v_active_debt_plan`, `v_debt_plan_schedule`, `v_debt_plan_projection` | debt charts |
 | `pay_dates(start, end)` | paydays for active income sources |
 | `paycheck_plan(date default today)` | period_start/end, expected_net, bills_total, minimums_total, set_asides_total, extra_debt, safe_to_spend, shortfall, spent_so_far, remaining_safe_to_spend, items (jsonb, itemized) |
@@ -158,5 +160,7 @@ values ('Avalanche +$200', 'avalanche', 200,
   $j$[{"month":"2026-04","debt_id":"<debt_id>","start":1840.66,"interest":38.33,"payment":240.00,"end":1638.99}]$j$::jsonb,
   '2026-03-09', true);
 ```
-`schedule` must be a JSON array of `{month:"YYYY-MM", debt_id, start, interest, payment, end}`
-(the web app charts it).
+`schedule` must be a JSON array of `{month:"YYYY-MM", debt_id, start, interest, payment, end, minimum}`
+(the web app charts it). `minimum` = the part of `payment` that is the scheduled minimum; paycheck_plan()
+budgets `payment - minimum` (rollover + extra) for each month via `debt_plan_extra_for_month()`.
+Without `minimum` keys the plan falls back to a flat `extra_monthly`.

@@ -7,6 +7,7 @@ import type {
   PaycheckIncomeItem,
   PaycheckSetAsideItem,
   VPayPeriod,
+  VPayPeriodForecast,
 } from '../types/db';
 import { formatCount, formatCurrency, formatDate, formatDateRange } from '../lib/format';
 import { Badge, Money, PageHeader, Row } from '../components/ui';
@@ -16,10 +17,18 @@ import { billStatusBadge } from '../components/billStatus';
 
 export default function Paychecks() {
   const periods = useView<VPayPeriod>('v_pay_periods', (sb) => sb.from('v_pay_periods').select('*').order('period_offset'));
+  const forecast = useView<VPayPeriodForecast>('v_pay_period_forecast', (sb) =>
+    sb.from('v_pay_period_forecast').select('*').order('period_index'),
+  );
+  // Join on period_start (lookup only, no arithmetic). Missing forecast rows simply hide the forecast box.
+  const forecastByStart = new Map((forecast.data ?? []).map((f) => [f.period_start, f]));
 
   return (
     <>
-      <PageHeader title="Paychecks" description="What each paycheck has to cover, from two periods back to six ahead." />
+      <PageHeader
+        title="Paychecks"
+        description="What each paycheck has to cover, and how much to hold back so short paychecks and bill clusters are covered."
+      />
       <QueryState
         state={periods}
         label="pay periods"
@@ -29,7 +38,7 @@ export default function Paychecks() {
         {(rows) => (
           <ol className="relative space-y-4 border-l-2 border-line pl-4 sm:pl-6">
             {rows.map((p) => (
-              <PeriodCard key={p.period_start} p={p} />
+              <PeriodCard key={p.period_start} p={p} f={forecastByStart.get(p.period_start) ?? null} />
             ))}
           </ol>
         )}
@@ -38,7 +47,7 @@ export default function Paychecks() {
   );
 }
 
-function PeriodCard({ p }: { p: VPayPeriod }) {
+function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
   const current = p.period_offset === 0;
   const past = p.period_offset < 0;
   const items = Array.isArray(p.items) ? p.items : [];
@@ -47,6 +56,8 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
   const mins = items.filter((i): i is PaycheckDebtMinimumItem => i.type === 'debt_minimum');
   const sets = items.filter((i): i is PaycheckSetAsideItem => i.type === 'set_aside');
   const extra = items.filter((i): i is PaycheckExtraDebtItem => i.type === 'extra_debt');
+  // A period that only works because earlier paychecks held money back is covered, not a shortfall.
+  const uncovered = f ? f.shortfall : p.shortfall;
 
   return (
     <li className="relative" aria-current={current ? 'step' : undefined}>
@@ -60,7 +71,7 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
       <section
         className={cx(
           'rounded-2xl border bg-surface p-4 sm:p-5',
-          p.shortfall ? 'border-danger-line ring-1 ring-danger-line' : current ? 'border-accent ring-1 ring-accent' : 'border-line',
+          uncovered ? 'border-danger-line ring-1 ring-danger-line' : current ? 'border-accent ring-1 ring-accent' : 'border-line',
           past && !current && 'opacity-85',
         )}
       >
@@ -69,7 +80,8 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
             <div className="flex flex-wrap items-center gap-1.5">
               <h2 className="text-base font-semibold text-ink">Payday {formatDate(p.period_start, 'weekday')}</h2>
               {current ? <Badge tone="accent">Current</Badge> : past ? <Badge tone="muted">Past</Badge> : <Badge tone="neutral">Upcoming</Badge>}
-              {p.shortfall ? <Badge tone="danger">Shortfall</Badge> : null}
+              {uncovered ? <Badge tone="danger">Shortfall</Badge> : null}
+              {!uncovered && f && f.hold_for_later < 0 ? <Badge tone="warn">Covered by earlier paychecks</Badge> : null}
               {current && p.overspent ? <Badge tone="danger">Overspent</Badge> : null}
             </div>
             <p className="mt-0.5 text-xs text-muted">
@@ -124,20 +136,22 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
                 <ItemLine key={s.id} name={s.name} amount={s.amount} />
               ))}
             </ItemGroup>
-            <ItemGroup title="Extra debt payment" total={p.extra_debt} empty="No active debt plan with extra payments.">
+            <ItemGroup title="Extra debt payment" total={p.extra_debt} empty="No rollover or extra payment this period.">
               {extra.map((x) => (
                 <ItemLine
                   key={x.name}
                   name={x.name}
-                  meta={`${formatCurrency(x.extra_monthly)}/mo over ${formatCount(x.paydays_per_year)} paydays a year`}
+                  meta={`${formatCurrency(x.extra_monthly)} this month (rollover + extra) over ${formatCount(x.paydays_per_year)} paydays a year`}
                   amount={x.amount}
                 />
               ))}
             </ItemGroup>
 
-            <div className={cx('rounded-xl border p-3', p.shortfall ? 'border-danger-line bg-danger-bg' : 'border-line bg-surface-2')}>
-              <Row label="Safe to spend" strong>
-                <span className={cx('text-base', p.shortfall ? 'text-danger' : 'text-ink')}>
+            {f ? <ForecastBox f={f} /> : null}
+
+            <div className={cx('rounded-xl border p-3', p.shortfall ? 'border-warn-line bg-warn-bg' : 'border-line bg-surface-2')}>
+              <Row label={f ? 'This paycheck minus its own bills' : 'Safe to spend'} strong={!f}>
+                <span className={cx(f ? 'text-ink' : 'text-base', p.shortfall ? (f ? 'text-warn' : 'text-danger') : 'text-ink')}>
                   <Money value={p.safe_to_spend} />
                 </span>
               </Row>
@@ -146,11 +160,13 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
                   <Row label="Spent so far">
                     <Money value={p.spent_so_far} />
                   </Row>
-                  <Row label="Remaining" strong>
-                    <span className={cx(p.overspent ? 'text-danger' : 'text-ink')}>
-                      <Money value={p.remaining_safe_to_spend} />
-                    </span>
-                  </Row>
+                  {!f ? (
+                    <Row label="Remaining" strong>
+                      <span className={cx(p.overspent ? 'text-danger' : 'text-ink')}>
+                        <Money value={p.remaining_safe_to_spend} />
+                      </span>
+                    </Row>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -158,6 +174,39 @@ function PeriodCard({ p }: { p: VPayPeriod }) {
         </div>
       </section>
     </li>
+  );
+}
+
+function ForecastBox({ f }: { f: VPayPeriodForecast }) {
+  const holding = f.hold_for_later > 0;
+  const drawing = f.hold_for_later < 0;
+  return (
+    <div className={cx('rounded-xl border p-3', f.shortfall ? 'border-danger-line bg-danger-bg' : 'border-accent bg-accent-soft')}>
+      <Row label={f.is_current ? 'Safe to spend (rest of period)' : 'Safe to spend'} strong>
+        <span className={cx('text-base', f.shortfall ? 'text-danger' : 'text-ink')}>
+          <Money value={f.safe_to_spend} />
+        </span>
+      </Row>
+      {holding ? (
+        <Row label="Hold back for later">
+          <Money value={f.hold_for_later} />
+        </Row>
+      ) : null}
+      {drawing ? (
+        <Row label="Uses money held back earlier">
+          <Money value={-f.hold_for_later} />
+        </Row>
+      ) : null}
+      <Row label="Projected cash at period end">
+        <Money value={f.carry_out} />
+      </Row>
+      <p className="mt-1.5 text-xs text-muted">
+        Keeps your balance above {formatCurrency(f.low_balance_floor)} through the next paychecks
+        {f.binding_date ? `; tightest point ${formatDate(f.binding_date, 'short')}` : ''}. Up to{' '}
+        {formatCurrency(f.max_safe_to_spend)} this period if later periods spend nothing extra.
+        {f.is_current ? ` Based on cash as of ${formatDate(f.cash_as_of, 'short')}.` : ''}
+      </p>
+    </div>
   );
 }
 

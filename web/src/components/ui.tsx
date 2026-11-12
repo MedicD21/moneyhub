@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { formatCurrency, moneyTone } from '../lib/format';
 import { cx } from '../lib/cx';
 import { Icon, type IconName } from './Icon';
@@ -49,6 +49,61 @@ export function Card({
       ) : null}
       {children}
     </section>
+  );
+}
+
+/**
+ * A Card whose body can be collapsed. Native <details>/<summary> for keyboard and screen-reader
+ * support; children render only while open, so hidden charts never measure a 0-width container.
+ */
+export function CollapsibleCard({
+  title,
+  subtitle,
+  meta,
+  children,
+  className,
+  defaultOpen = false,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  /** short right-aligned text shown in the header, e.g. a count */
+  meta?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  defaultOpen?: boolean;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <details
+      open={open}
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+      className={cx(
+        'group min-w-0 rounded-2xl border border-line bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
+        className,
+      )}
+    >
+      <summary
+        className={cx(
+          'flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-4 py-3 sm:px-5',
+          '[&::-webkit-details-marker]:hidden hover:bg-surface-2',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
+        )}
+      >
+        <span className="flex min-w-0 items-start gap-2">
+          <Icon
+            name="chevronRight"
+            size={16}
+            className="mt-0.5 shrink-0 text-muted transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-ink">{title}</span>
+            {subtitle ? <span className="mt-0.5 block text-xs text-muted">{subtitle}</span> : null}
+          </span>
+        </span>
+        {meta ? <span className="shrink-0 text-xs text-muted tabular-nums">{meta}</span> : null}
+      </summary>
+      {open ? <div className="px-4 pb-4 sm:px-5 sm:pb-5">{children}</div> : null}
+    </details>
   );
 }
 

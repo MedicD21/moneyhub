@@ -182,10 +182,17 @@ export type VBillStatus = {
   category_id: Uuid | null;
   category_name: string | null;
   transaction_id: Uuid | null;
+  /** set when this bill is the payment schedule of a debt (20261112165034) */
+  debt_id: Uuid | null;
+  /** last due date of an installment plan; null = open-ended (20261112163926) */
+  end_date: IsoDate | null;
 };
 
-/** public.v_upcoming_bills: v_bill_status rows of active bills that are due/partial and due within 30 days (incl. overdue). */
-export type VUpcomingBill = VBillStatus;
+/**
+ * public.v_upcoming_bills: v_bill_status rows of active bills that are due/partial and due within 30 days (incl. overdue).
+ * Its column list is explicit, so it does not carry the columns appended to v_bill_status later.
+ */
+export type VUpcomingBill = Omit<VBillStatus, 'debt_id' | 'end_date'>;
 
 /** public.v_monthly_bills_total (one row; normalized monthly run-rate of active bills) */
 export type VMonthlyBillsTotal = {
@@ -216,6 +223,12 @@ export type VDebt = {
   balance_source: 'account_snapshot' | 'debt_balances' | null;
   utilization_pct: number | null;
   is_active: boolean;
+  /** the bill that schedules this debt's payments, if any (20261112165034) */
+  payment_bill_id: Uuid | null;
+  /** that bill's end_date: last scheduled payment of an installment plan */
+  final_payment_date: IsoDate | null;
+  /** unpaid amount of that bill's occurrences already past due */
+  overdue_amount: number;
 };
 
 /** public.v_review_queue */
@@ -289,6 +302,48 @@ export type VAppInfo = {
   timezone: string | null;
   stale_after_days: number | null;
   low_balance_threshold: number | null;
+};
+
+// ---------------------------------------------------------------------------
+// 20261112171106_forecast_levelized_spending.sql
+// ---------------------------------------------------------------------------
+
+/**
+ * public.v_pay_period_forecast: balance-anchored cash-flow forecast, current period first
+ * (period_index 1) then upcoming ones. Starts from the real cash balance and walks every
+ * dated paycheck, bill, minimum, set-aside and plan payment over a look-ahead.
+ */
+export type VPayPeriodForecast = {
+  period_index: number;
+  period_start: IsoDate;
+  period_end: IsoDate;
+  next_pay_date: IsoDate;
+  is_current: boolean;
+  expected_net: number;
+  /** paychecks still to arrive in this period (0 once the deposit is recorded) */
+  income_in: number;
+  /** bills, minimums, set-asides and plan payments still due in this period */
+  obligations: number;
+  /** cash in checking/savings/cash accounts today (same for every row) */
+  starting_cash: number;
+  cash_as_of: IsoDate | null;
+  /** app_settings.low_balance_threshold: the forecast never plans below this */
+  low_balance_floor: number;
+  /** levelized: the steady amount you can spend this period (rest of period for the current one) */
+  safe_to_spend: number;
+  /** ceiling for this period alone if later periods spend nothing extra */
+  max_safe_to_spend: number;
+  /** left behind for a later low point; negative = this period uses money held earlier */
+  hold_for_later: number;
+  /** projected cash at the end of the period after spending safe_to_spend */
+  carry_out: number;
+  /** date of the lowest projected balance from this period onward (before spending) */
+  binding_date: IsoDate | null;
+  binding_balance: number | null;
+  /** current period only: can't stay above the floor even with zero spending */
+  shortfall: boolean;
+  /** this period's paycheck is already recorded as a deposit */
+  income_received: boolean;
 };
 
 /** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */
@@ -461,6 +516,7 @@ export type Database = {
       v_transaction_months: ReadOnlyView<VTransactionMonth>;
       v_pay_periods: ReadOnlyView<VPayPeriod>;
       v_dashboard: ReadOnlyView<VDashboard>;
+      v_pay_period_forecast: ReadOnlyView<VPayPeriodForecast>;
     };
     Functions: { [_ in never]: never };
     Enums: { [_ in never]: never };

@@ -76,8 +76,11 @@ CATEGORIZING MONEY MOVING BETWEEN MY OWN ACCOUNTS
   must not count again.
 - Loan payments (auto, student, etc.): category "Debt Payment" and debt_id set.
 - Moving money between checking and savings: category "Transfer".
-- Do NOT create a bill for a debt's minimum payment. debts.min_payment is
-  already subtracted in paycheck_plan(), so a bill would double count it.
+- Debt payment schedules live in bills: every debt has one bill with
+  bills.debt_id set (amount follows debts.min_payment automatically).
+  paycheck_plan() skips the debt's own minimum when such a bill exists, so
+  nothing is double counted. Never create a second, unlinked bill for a debt.
+  Tagging a transaction with debt_id auto-links it to the nearest open payment.
 
 OTHER WRITES
 - Accounts, bills, income sources, debts, set-asides, categories and
@@ -103,6 +106,18 @@ FORECASTS AND DEBT PLANS
 - Save to debt_plans ONLY when I say "save this plan" (template in the
   knowledge file). Activating a plan: set the old active plan is_active=false
   first, in the same statement batch.
+- Affirm-style installment balances are "remaining scheduled payments" that
+  already include future interest: model them at 0% on their fixed schedule
+  (bills.end_date), never at their stated APR.
+
+PAYCHECKS
+- A holiday or one-off change to a paycheck goes in pay_date_overrides
+  (income_source_id, scheduled_date, actual_date, actual_net); pay_dates()
+  applies it. Don't edit the income source for a one-off.
+- How much to spend vs hold back comes from v_pay_period_forecast (safe_to_spend,
+  hold_for_later, binding_date), not from paycheck_plan().safe_to_spend, which
+  ignores short paychecks ahead. The forecast needs a fresh balance snapshot and the
+  paycheck deposit imported as a transaction, or it double counts / misses the deposit.
 
 SHORTCUTS
 - "money update": v_dashboard + v_upcoming_bills (next 7 days) + review queue

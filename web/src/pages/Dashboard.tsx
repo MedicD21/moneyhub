@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useView } from '../hooks/useView';
-import type { VAccountBalance, VAppInfo, VDashboard, VUpcomingBill } from '../types/db';
+import type { VAccountBalance, VAppInfo, VDashboard, VPayPeriodForecast, VUpcomingBill } from '../types/db';
 import { addDays, formatCount, formatCurrency, formatDate, formatDateRange, formatRelativeDays, humanize } from '../lib/format';
 import { Badge, Banner, Card, Money, PageHeader, Row, Stat } from '../components/ui';
 import { cx } from '../lib/cx';
@@ -10,6 +10,10 @@ import { billStatusBadge } from '../components/billStatus';
 export default function Dashboard() {
   const dash = useView<VDashboard>('v_dashboard', (sb) => sb.from('v_dashboard').select('*').limit(1));
   const appInfo = useView<VAppInfo>('v_app_info', (sb) => sb.from('v_app_info').select('*').limit(1));
+  const forecast = useView<VPayPeriodForecast>('v_pay_period_forecast:current', (sb) =>
+    sb.from('v_pay_period_forecast').select('*').eq('period_index', 1).limit(1),
+  );
+  const current = forecast.data?.[0] ?? null;
   const today = appInfo.data?.[0]?.today ?? null;
 
   // v_app_info.today is the reference date (owner's timezone); 7 days ahead is a date string, not money math.
@@ -34,7 +38,7 @@ export default function Dashboard() {
       <QueryState state={dash} label="the dashboard" empty="No dashboard data yet." loadingLines={8}>
         {(rows) => {
           const row = rows[0];
-          return row ? <DashboardBody d={row} /> : null;
+          return row ? <DashboardBody d={row} f={current} /> : null;
         }}
       </QueryState>
 
@@ -113,9 +117,11 @@ export default function Dashboard() {
   );
 }
 
-function DashboardBody({ d }: { d: VDashboard }) {
+function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }) {
   const isStale = d.oldest_data_days !== null && d.stale_after_days !== null && d.oldest_data_days >= d.stale_after_days;
   const hasPeriod = d.period_start !== null && d.safe_to_spend !== null;
+  // With the forecast, a period that earlier paychecks cover is not a shortfall; only an uncovered one is.
+  const shortfall = f ? f.shortfall : d.shortfall;
   // Bar width only (chart scaling): share of safe-to-spend already spent.
   const spentRatio =
     hasPeriod && d.safe_to_spend !== null && d.safe_to_spend > 0 && d.spent_so_far !== null
@@ -124,11 +130,13 @@ function DashboardBody({ d }: { d: VDashboard }) {
 
   return (
     <div className="space-y-4">
-      {isStale || d.accounts_without_snapshot > 0 || d.shortfall || d.balance_check_issues > 0 ? (
+      {isStale || d.accounts_without_snapshot > 0 || shortfall || d.balance_check_issues > 0 ? (
         <div className="space-y-2">
-          {d.shortfall ? (
+          {shortfall ? (
             <Banner tone="danger" title="Shortfall this pay period">
-              Bills, minimums and set-asides exceed this paycheck. Safe to spend is {formatCurrency(d.safe_to_spend)}.
+              {f
+                ? `Even with no spending, projected cash drops below your ${formatCurrency(f.low_balance_floor)} floor around ${formatDate(f.binding_date, 'short')}.`
+                : `Bills, minimums and set-asides exceed this paycheck. Safe to spend is ${formatCurrency(d.safe_to_spend)}.`}
             </Banner>
           ) : null}
           {isStale ? (
@@ -161,12 +169,36 @@ function DashboardBody({ d }: { d: VDashboard }) {
         <Card
           title="Safe to spend"
           subtitle={hasPeriod ? `This pay period · ${formatDateRange(d.period_start, d.period_end)}` : 'This pay period'}
-          tone={d.shortfall ? 'danger' : 'accent'}
+          tone={shortfall ? 'danger' : 'accent'}
           action={
-            d.shortfall ? <Badge tone="danger">Shortfall</Badge> : d.overspent ? <Badge tone="danger">Overspent</Badge> : null
+            shortfall ? <Badge tone="danger">Shortfall</Badge> : !f && d.overspent ? <Badge tone="danger">Overspent</Badge> : null
           }
         >
-          {hasPeriod ? (
+          {hasPeriod && f ? (
+            <>
+              <Stat
+                label="Rest of this period"
+                value={<Money value={f.safe_to_spend} />}
+                emphasis
+                tone={f.safe_to_spend < 0 ? 'danger' : 'default'}
+                hint="Steady amount that still covers short paychecks ahead"
+              />
+              <div className="mt-3 divide-y divide-line border-t border-line">
+                {f.hold_for_later > 0 ? (
+                  <Row label="Hold back for later">
+                    <Money value={f.hold_for_later} />
+                  </Row>
+                ) : null}
+                <Row label="Spent so far">
+                  <Money value={d.spent_so_far} />
+                </Row>
+                <Row label="Paycheck (expected net)">
+                  <Money value={d.period_expected_net} />
+                </Row>
+                <Row label="Cash as of">{formatDate(f.cash_as_of, 'short')}</Row>
+              </div>
+            </>
+          ) : hasPeriod ? (
             <>
               <Stat
                 label="Remaining"
