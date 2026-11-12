@@ -1,0 +1,135 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens. Light by default, dark via prefers-color-scheme.
+ * Chart series follow the validated categorical palette (light/dark steps).
+ */
+:root {
+  color-scheme: light;
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+  --surface-2: #f0efec;
+  --border: #e1e0d9;
+  --text: #161615;
+  --muted: #5c5b57;
+  --subtle: #7a7973;
+  --accent: #1f6f54;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3f1ec;
+
+  --pos: #006300;
+  --neg: #b42318;
+  --ok-bg: #e7f4e7;
+  --ok-line: #9fd19f;
+  --warn: #8a5300;
+  --warn-bg: #fdf3dc;
+  --warn-line: #f0c46b;
+  --danger: #b42318;
+  --danger-bg: #fdecea;
+  --danger-line: #f1a7a0;
+
+  --chart-grid: #e1e0d9;
+  --chart-axis: #c3c2b7;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+  --income: #1baf7a;
+  --spending: #eb6834;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #121211;
+    --surface: #1b1b1a;
+    --surface-2: #252523;
+    --border: #33332f;
+    --text: #f0efec;
+    --muted: #b9b8ae;
+    --subtle: #9a998f;
+    --accent: #5fc3a0;
+    --accent-ink: #0b1f18;
+    --accent-soft: #173229;
+
+    --pos: #4cc24c;
+    --neg: #f28b82;
+    --ok-bg: #152a15;
+    --ok-line: #2f6a2f;
+    --warn: #f5c15a;
+    --warn-bg: #2d2412;
+    --warn-line: #6b5420;
+    --danger: #f28b82;
+    --danger-bg: #331a18;
+    --danger-line: #7a332d;
+
+    --chart-grid: #2c2c2a;
+    --chart-axis: #4a4a46;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --income: #199e70;
+    --spending: #d95926;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--border);
+  --color-ink: var(--text);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-pos: var(--pos);
+  --color-neg: var(--neg);
+  --color-ok-bg: var(--ok-bg);
+  --color-ok-line: var(--ok-line);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-warn-line: var(--warn-line);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-danger-line: var(--danger-line);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Recharts: no focus ring box around the SVG on click. */
+.recharts-wrapper svg:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
