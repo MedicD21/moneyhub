@@ -136,7 +136,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
             <Banner tone="danger" title="Shortfall this pay period">
               {f
                 ? f.binding_balance !== null
-                  ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} around ${formatDate(f.binding_date, 'short')}, ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. See Paychecks for which bills cause it.`
+                  ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} around ${formatDate(f.binding_date, 'short')}, ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. See Paychecks for which bills cause it.${f.extra_hours_needed !== null ? ` Rough fix: about ${f.extra_hours_needed} extra overtime hours (about ${formatCurrency(f.extra_hour_net)} per hour after taxes), paid before ${formatDate(f.binding_date, 'short')}.` : ''}`
                   : `Even with no spending, projected cash drops below your ${formatCurrency(f.low_balance_floor)} minimum balance around ${formatDate(f.binding_date, 'short')}.`
                 : `Bills, minimums and set-asides exceed this paycheck. Safe to spend is ${formatCurrency(d.safe_to_spend)}.`}
             </Banner>

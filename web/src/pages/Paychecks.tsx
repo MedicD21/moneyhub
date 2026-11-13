@@ -514,6 +514,15 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
           ? ` Based on cash as of ${formatDate(f.cash_as_of, "short")}.`
           : ""}
       </p>
+      {f.shortfall && f.extra_hours_needed !== null ? (
+        <p className="mt-1.5 text-xs text-ink">
+          Rough fix: about {f.extra_hours_needed} extra overtime hours (about{" "}
+          {formatCurrency(f.extra_hour_net)} per hour after taxes). One extra{" "}
+          {f.extra_shift_hours}-hour shift would bring in about{" "}
+          {formatCurrency(f.extra_shift_net)}. The extra pay has to be deposited
+          before {formatDate(f.binding_date, "short")} to help.
+        </p>
+      ) : null}
     </div>
   );
 }

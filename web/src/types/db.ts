@@ -353,6 +353,13 @@ export type VPayPeriodForecast = {
   /** next_obligations minus next_income: what the following period takes from this period's leftover cash */
   next_draw: number | null;
   next_period_end: IsoDate | null;
+  /** approx. take-home per extra overtime hour (app_settings.extra_hour_net) */
+  extra_hour_net: number | null;
+  /** shortfall only: extra overtime hours that would cover it, rounded up to the half hour */
+  extra_hours_needed: number | null;
+  /** shortfall only: approx. take-home from one extra full shift */
+  extra_shift_net: number | null;
+  extra_shift_hours: number | null;
 };
 
 /** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */
