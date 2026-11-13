@@ -1,7 +1,7 @@
 {
   "name": "moneyhub",
   "version": "1.0.0",
-  "description": "Personal finances with **Supabase as the single source of truth**. A **Claude Project** reads bank-app screenshots and writes facts. A **read-only web app** shows the numbers. Every total, balance and safe-to-spend figure is computed by SQL views, so Claude and the web app always report the same numbers.",
+  "description": "Personal finances with **Supabase as the single source of truth**. A **Claude Project** reads bank-app screenshots and writes facts. A **web app** shows the numbers; its only writes are five owner-checked database functions (manual entries and virtual envelope moves), and reconciliation stays with Claude. Every total, balance and safe-to-spend figure is computed by SQL views, so Claude and the web app always report the same numbers.",
   "main": "index.js",
   "directories": {
     "doc": "docs"

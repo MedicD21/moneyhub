@@ -90,7 +90,8 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
   const [note, setNote] = useState(editing?.note ?? '');
   const [cleared, setCleared] = useState(editing?.cleared ?? false);
   const [billId, setBillId] = useState(editing?.bill_occurrence_id ?? '');
-  const [debtId, setDebtId] = useState(editing?.debt_id ?? '');
+  // Only for an extra payment with no bill. A bill that pays a debt carries the debt; the database decides it.
+  const [debtId, setDebtId] = useState(editing?.bill_occurrence_id ? '' : (editing?.debt_id ?? ''));
   const [showMore, setShowMore] = useState(Boolean(editing?.bill_occurrence_id || editing?.debt_id));
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -107,7 +108,11 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
   const categoryOptions = (categories.data ?? []).filter((c) => (direction === 'income' ? c.kind === 'income' : c.kind !== 'income'));
   const merchantSuggestions = Array.from(new Set((recent.data ?? []).map((r) => r.merchant).filter((m): m is string => Boolean(m)))).slice(0, 40);
   const billList = bills.data ?? [];
-  const linkedBillMissing = billId !== '' && !billList.some((b) => b.occurrence_id === billId);
+  const selectedBill = billList.find((b) => b.occurrence_id === billId) ?? null;
+  const linkedBillMissing = billId !== '' && !selectedBill;
+  // Display only: the debt the chosen bill pays. The stored debt_id is set by add/update_manual_transaction.
+  const billDebtId = selectedBill ? selectedBill.debt_id : linkedBillMissing ? (editing?.debt_id ?? null) : null;
+  const billDebtName = billDebtId ? ((debts.data ?? []).find((d) => d.debt_id === billDebtId)?.name ?? 'Linked debt') : null;
 
   function changeDirection(next: Direction) {
     setDirection(next);
@@ -121,6 +126,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
 
   function chooseBill(id: string) {
     setBillId(id);
+    if (id) setDebtId('');
     const bill = billList.find((b) => b.occurrence_id === id);
     if (!bill) return;
     if (!merchant.trim()) setMerchant(bill.bill_name);
@@ -162,7 +168,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
       note: note.trim() || null,
       cleared,
       billOccurrenceId: direction === 'expense' && billId ? billId : null,
-      debtId: direction === 'expense' && debtId ? debtId : null,
+      debtId: direction === 'expense' && !billId && debtId ? debtId : null,
     };
     const res = editing
       ? await updateManualTransaction(editing.id, common)
@@ -379,16 +385,27 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
                   ))}
                 </select>
               </Field>
-              <Field label="Debt payment">
-                <select className={inputClass} value={debtId} onChange={(e) => chooseDebt(e.target.value)}>
-                  <option value="">Not a debt payment</option>
-                  {(debts.data ?? []).map((d) => (
-                    <option key={d.debt_id} value={d.debt_id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {billDebtName ? (
+                <div className="text-sm text-ink">
+                  <span className="text-xs font-medium text-muted">Pays debt</span>
+                  <div>{billDebtName}</div>
+                </div>
+              ) : null}
+              {!billId ? (
+                <Field label="Extra payment toward a debt">
+                  <select className={inputClass} value={debtId} onChange={(e) => chooseDebt(e.target.value)}>
+                    <option value="">Not a debt payment</option>
+                    {(debts.data ?? []).map((d) => (
+                      <option key={d.debt_id} value={d.debt_id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                  <span className="mt-1 block text-xs text-muted">
+                    For payments that are not tied to a scheduled bill. A scheduled debt payment goes under Bill.
+                  </span>
+                </Field>
+              ) : null}
               <p className="text-xs text-muted">Linking a bill marks it paid so the forecast stops counting it as still due.</p>
             </div>
           ) : null}

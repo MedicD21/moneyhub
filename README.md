@@ -1,17 +1,28 @@
 # Money Hub
 
 Personal finances with **Supabase as the single source of truth**. A **Claude Project**
-reads bank-app screenshots and writes facts. A **read-only web app** shows the numbers.
-Every total, balance and safe-to-spend figure is computed by SQL views, so Claude and the
-web app always report the same numbers.
+reads bank-app screenshots and writes facts. A **web app with narrow writes** shows the
+numbers and lets you add manual entries and move virtual envelope money. Every total,
+balance and safe-to-spend figure is computed by SQL views, so Claude and the web app
+always report the same numbers.
 
 ```
 Claude Project "Money" ──(Supabase connector: SQL)──┐
                                                     ▼
                          Supabase: tables (facts) → views/functions (math) ← pg_cron
                                                     ▲
-Web app (React, read-only, RLS) ──(select only)─────┘
+Web app (React, RLS) ──(select + 5 owner-checked functions)─┘
 ```
+
+## Write model
+
+The browser never writes a table. Tables and views are `SELECT`-only for the signed-in
+user (RLS). The only writes are five `SECURITY DEFINER` functions that check the caller is
+the app owner, called from one file (`web/src/lib/writes.ts`): `add_manual_transaction`,
+`update_manual_transaction`, `delete_manual_transaction`, `set_transaction_cleared` and
+`move_envelope_money`. Reconciliation stays with Claude: `reconcile_transactions` and
+`unreconcile_transactions` are not granted to the web role, and a trigger blocks web
+sessions from changing reconciled rows. Details: [`web/README.md`](web/README.md#write-guarantees).
 
 ## Start here
 
@@ -27,16 +38,18 @@ Web app (React, read-only, RLS) ──(select only)─────┘
 
 ```
 supabase/
-  migrations/      7 migrations: schema, schedule functions, views, paycheck/dashboard,
-                   Claude procedures, security (RLS + grants), pg_cron
-  tests/database/  pgTAP suite (189 assertions): every Phase 1 acceptance check,
-                   plus the Phase 2 screenshot acceptance checks
+  migrations/      migrations: schema, schedule functions, views, paycheck/dashboard,
+                   Claude procedures, security (RLS + grants), pg_cron, forecast,
+                   manual entry and envelopes
+  tests/database/  pgTAP suite (278 assertions): Phase 1 and 2 acceptance checks,
+                   plus manual entry, the reconciliation guard and envelopes
   tests/local/     Supabase shim for running the suite on plain Postgres
   seed.sql         LOCAL demo data only (never push it to your real project)
   config.toml      Supabase CLI config (sign-ups disabled)
 scripts/
   test-db-local.sh run the SQL suite on a throwaway local Postgres (no Docker)
-web/               React + TypeScript + Vite + Tailwind + Recharts, read-only
+web/               React + TypeScript + Vite + Tailwind + Recharts; reads views, writes only
+                   through five owner-checked functions
 docs/              setup, spec review, Claude Project instructions
 ```
 

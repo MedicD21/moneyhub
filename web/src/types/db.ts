@@ -197,9 +197,9 @@ export type VBillStatus = {
 
 /**
  * public.v_upcoming_bills: v_bill_status rows of active bills that are due/partial and due within 30 days (incl. overdue).
- * Its column list is explicit, so it does not carry the columns appended to v_bill_status later.
+ * Same columns as v_bill_status, including debt_id and end_date (re-created in 20261113010000_single_pays_link.sql).
  */
-export type VUpcomingBill = Omit<VBillStatus, 'debt_id' | 'end_date'>;
+export type VUpcomingBill = VBillStatus;
 
 /** public.v_monthly_bills_total (one row; normalized monthly run-rate of active bills) */
 export type VMonthlyBillsTotal = {
