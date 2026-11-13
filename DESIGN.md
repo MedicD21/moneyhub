@@ -291,7 +291,7 @@ Depth is layered light and glass, not flat tone. Three planes: the ambient layer
 ### Named Rules
 **The One Lit Hero Rule.** Exactly one figure per screen is lit: Safe-to-spend on the Dashboard, framed by the reticle (ring of light plus four corner brackets) over a breathing beacon. Secondary headline figures are large but unlit.
 
-**The Capped Blur Rule.** Backdrop blur never exceeds 20px (glass 20px, readout 14px, scrim 6px). Ambient motion is transform-only on a fixed layer. Both protect phone GPUs.
+**The Capped Blur Rule.** Backdrop blur never exceeds 20px (glass 20px, readout 14px, scrim 6px). Ambient motion is transform-only on a fixed layer. Both protect phone GPUs. Blur cost on a phone scales with the blurred area, not just the radius: on touch screens (`hover: none`) an open collapsible panel drops its backdrop blur for a 94% solid fill, and panel entrances (`rise`) fade and lift without the blur. Long runs of charts go in collapsible panels, and charts mount as they scroll near (`ChartFrame`). A 3,700px frosted Debts card crashed mobile Safari.
 
 **The Dark Only Rule.** There is one theme. `color-scheme: dark`; no light tokens, no theme switch.
 
@@ -316,7 +316,7 @@ Lit, tactile, and quiet everywhere except the one primary action.
 
 ### Cards / Containers
 - **Corner Style:** 20px.
-- **Background:** smoked glass (72% fill so the lamps never compete with text, white highlight gradient, 20px blur, 150% saturate).
+- **Background:** smoked glass (72% fill so the lamps never compete with text, white highlight gradient, 20px blur, 150% saturate). On touch screens an open collapsible panel is near-solid instead (see the Capped Blur Rule).
 - **Shadow Strategy:** glass drop; accent or danger bloom only on toned panels (see Elevation).
 - **Border:** 1px edge; pine at 32% for accent, alarm line for danger.
 - **Seam:** a resting 1px pine line on the top edge with a faint pulse that travels it once every 120s, offset per panel, so it reads as a rare event. Danger and warn panels tint the seam.

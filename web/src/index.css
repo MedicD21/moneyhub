@@ -381,6 +381,18 @@ select option { background: var(--surface-solid); color: var(--text); }
   animation: rise 0.7s var(--ease-out) backwards;
   animation-delay: var(--d, 0ms);
 }
+/* Phones: GPU memory scales with blurred AREA, not blur radius. An open collapsible panel can
+   run thousands of pixels tall (Debts: one chart per debt); frosting it or blurring it on entry
+   made mobile Safari kill the page (black screen, reload loop). Those panels go near-opaque
+   instead, and entrances drop the blur and keep the fade and lift. Short panels keep the frost. */
+@media (hover: none) {
+  .rise { animation-name: rise-lite; }
+  details.glass[open] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: linear-gradient(180deg, var(--glass-hi), var(--glass-lo)), color-mix(in oklab, var(--surface-solid) 94%, transparent);
+  }
+}
 :where(.stagger) > :nth-child(1) { --d: 40ms; --seam-delay: 9s; }
 :where(.stagger) > :nth-child(2) { --d: 100ms; --seam-delay: 47s; }
 :where(.stagger) > :nth-child(3) { --d: 160ms; --seam-delay: 86s; }
@@ -739,6 +751,9 @@ select option { background: var(--surface-solid); color: var(--text); }
 }
 @keyframes rise {
   from { opacity: 0.08; transform: translateY(14px) scale(0.985); filter: blur(6px); }
+}
+@keyframes rise-lite {
+  from { opacity: 0.08; transform: translateY(14px) scale(0.985); }
 }
 @keyframes figure-in {
   from { opacity: 0.2; filter: blur(8px); letter-spacing: 0.06em; }

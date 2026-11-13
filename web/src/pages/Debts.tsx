@@ -52,6 +52,7 @@ export default function Debts() {
   // Header counts only (no money math): how many rows each collapsed section holds.
   const debtCount = debts.data?.length ?? null;
   const historyDebtCount = history.data ? new Set(history.data.map((r) => r.debt_id)).size : null;
+  const scheduleDebtCount = schedule.data ? new Set(schedule.data.map((r) => r.debt_id)).size : null;
 
   return (
     <>
@@ -91,15 +92,24 @@ export default function Debts() {
                     {(proj) => <ProjectionChart rows={proj} />}
                   </QueryState>
                 </section>
-                <section>
-                  <h3 className="mb-2 text-sm font-semibold text-ink">Projected balance by debt</h3>
-                  <ScheduleSection state={schedule} colorFor={colorFor} />
-                </section>
               </div>
             );
           }}
         </QueryState>
       </Card>
+
+      {/* Its own collapsed panel: 18 charts in one always-open glass card made a ~3,700px
+          blurred layer that mobile Safari could not hold in memory (black screen, reload loop). */}
+      {plan.data?.[0] ? (
+        <CollapsibleCard
+          className="mt-4"
+          title="Projected balance by debt"
+          subtitle="When each debt reaches $0 in the active plan"
+          meta={scheduleDebtCount !== null ? `${formatCount(scheduleDebtCount)} debt${scheduleDebtCount === 1 ? '' : 's'}` : null}
+        >
+          <ScheduleSection state={schedule} colorFor={colorFor} />
+        </CollapsibleCard>
+      ) : null}
     </>
   );
 }

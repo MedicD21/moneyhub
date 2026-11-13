@@ -3,6 +3,7 @@ import type { TooltipPayloadEntry } from 'recharts';
 import { formatCurrency } from '../lib/format';
 import { cx } from '../lib/cx';
 import { lit, shade } from './hudDefs';
+import { useNearViewport } from '../hooks/useNearViewport';
 
 /**
  * The HUD plate every chart sits on: ceramic gradient, lit top seam, corner brackets and one
@@ -25,6 +26,8 @@ export function ChartFrame({
   children: ReactNode;
 }) {
   const Tag = caption ? 'figure' : 'div';
+  // The plate and its sized box render at once (no layout jump); the chart mounts on approach.
+  const { ref, near } = useNearViewport<HTMLDivElement>();
   return (
     <Tag className={cx('hud-plate min-w-0', caption ? 'px-3 pt-3 pb-1' : 'px-1.5 pt-3 pb-1')}>
       <span className="hud-bracket" data-c="tl" aria-hidden="true" />
@@ -32,8 +35,8 @@ export function ChartFrame({
       <span className="hud-bracket" data-c="bl" aria-hidden="true" />
       <span className="hud-bracket" data-c="br" aria-hidden="true" />
       {caption ? <figcaption className="relative mb-1 px-1">{caption}</figcaption> : null}
-      <div className={cx('relative w-full', className)} style={style} role="img" aria-label={label}>
-        {children}
+      <div ref={ref} className={cx('relative w-full', className)} style={style} role="img" aria-label={label}>
+        {near ? children : null}
       </div>
     </Tag>
   );
