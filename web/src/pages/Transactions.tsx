@@ -67,7 +67,7 @@ export default function Transactions() {
       />
 
       <Card className="mb-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <Field label="Month">
             {months.error ? (
               <FilterError onRetry={months.reload} />
@@ -126,22 +126,22 @@ export default function Transactions() {
               </select>
             )}
           </Field>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm text-ink">
+          <div className="col-span-2 flex flex-wrap items-end gap-2 lg:col-span-1">
+            <label className="flex min-h-11 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm whitespace-nowrap text-ink sm:min-h-10">
               <input
                 type="checkbox"
                 checked={review}
                 onChange={(e) => set({ review: e.target.checked ? '1' : null })}
-                className="h-4 w-4 accent-[var(--accent)]"
+                className="h-5 w-5 shrink-0 accent-[var(--accent)]"
               />
               Needs review
             </label>
-            <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm text-ink">
+            <label className="flex min-h-11 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm whitespace-nowrap text-ink sm:min-h-10">
               <input
                 type="checkbox"
                 checked={unreconciled}
                 onChange={(e) => set({ unreconciled: e.target.checked ? '1' : null })}
-                className="h-4 w-4 accent-[var(--accent)]"
+                className="h-5 w-5 shrink-0 accent-[var(--accent)]"
               />
               Not reconciled
             </label>
@@ -272,30 +272,30 @@ function TransactionRow({ t }: { t: VTransaction }) {
         </div>
         <Money value={t.amount} signed showPlus className="shrink-0 text-sm font-semibold" />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-        <label className="flex min-h-8 cursor-pointer items-center gap-2 text-xs text-ink">
+      <div className="mt-1 flex flex-wrap items-center gap-x-4">
+        <label className="-ml-1 flex min-h-10 cursor-pointer items-center gap-2 px-1 text-xs text-ink">
           <input
             type="checkbox"
             checked={cleared}
             onChange={(e) => void toggleCleared(e.target.checked)}
-            className="h-4 w-4 accent-[var(--accent)]"
+            className="h-5 w-5 accent-[var(--accent)]"
           />
           Cleared
         </label>
         <label
-          className="flex min-h-8 items-center gap-2 text-xs text-muted"
+          className="flex min-h-10 items-center gap-2 text-xs text-muted"
           title={t.reconciled ? 'Reconciled by Claude against a bank screenshot' : 'Only Claude can reconcile'}
         >
-          <input type="checkbox" checked={t.reconciled} disabled readOnly className="h-4 w-4" aria-label="Reconciled (set only by Claude)" />
+          <input type="checkbox" checked={t.reconciled} disabled readOnly className="h-5 w-5" aria-label="Reconciled (set only by Claude)" />
           Reconciled
         </label>
         {manual && !t.reconciled ? (
           <button
             type="button"
             onClick={() => openEdit(t)}
-            className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-accent hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
+            className="-mr-2 ml-auto inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm font-medium text-accent hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
           >
-            <Icon name="edit" size={14} /> Edit
+            <Icon name="edit" size={16} /> Edit
           </button>
         ) : null}
       </div>

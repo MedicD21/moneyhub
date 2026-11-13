@@ -252,7 +252,7 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
                 payday {formatDate(p.next_pay_date, "short")}
               </p>
             </div>
-            <dl className="grid grid-cols-3 gap-x-4 text-right text-sm">
+            <dl className="grid w-full grid-cols-3 gap-x-3 text-left text-sm sm:w-auto sm:gap-x-4 sm:text-right">
               <div>
                 <dt className="text-xs text-muted">Paycheck</dt>
                 <dd className="font-semibold text-pos">

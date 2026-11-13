@@ -261,8 +261,9 @@ export function Field({ label, children, className }: { label: string; children:
   );
 }
 
+/** 16px on phones: iOS Safari zooms the page when a focused field is smaller. */
 export const inputClass =
-  'min-h-10 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent';
+  'min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-base text-ink sm:min-h-10 sm:text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent';
 
 /** Definition-list row: label left, value right. */
 export function Row({ label, children, strong = false }: { label: ReactNode; children: ReactNode; strong?: boolean }) {

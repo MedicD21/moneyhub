@@ -5,6 +5,7 @@ import { Icon, type IconName } from './Icon';
 import { cx } from '../lib/cx';
 import { EntryProvider, useEntry } from './EntryContext';
 import { TransactionSheet } from './TransactionSheet';
+import { useVisualViewport } from '../hooks/useVisualViewport';
 
 const NAV: Array<{ to: string; label: string; short: string; icon: IconName; desktopOnly?: boolean }> = [
   { to: '/', label: 'Dashboard', short: 'Home', icon: 'home' },
@@ -58,6 +59,9 @@ function Brand() {
 
 function AddButton() {
   const { openAdd } = useEntry();
+  const { keyboardOpen } = useVisualViewport();
+  // On iPhone fixed elements ride up on top of the keyboard and cover the field being typed in.
+  if (keyboardOpen) return null;
   return (
     <button
       type="button"
@@ -82,6 +86,7 @@ export function Layout() {
 
 function Shell() {
   const { session } = useAuth();
+  const { keyboardOpen } = useVisualViewport();
   return (
     <div className="min-h-dvh bg-bg">
       <a
@@ -127,7 +132,7 @@ function Shell() {
       </header>
 
       <div className="md:pl-60">
-        <main id="main" className="mx-auto w-full max-w-6xl px-4 pt-5 pb-28 sm:px-6 md:pt-8 md:pb-12 lg:px-10">
+        <main id="main" className="mx-auto w-full max-w-6xl px-4 pt-5 pb-[calc(10.5rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-8 md:pb-12 lg:px-10">
           <Outlet />
         </main>
       </div>
@@ -135,7 +140,10 @@ function Shell() {
       {/* Mobile bottom tab bar */}
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className={cx(
+          'fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden',
+          keyboardOpen && 'hidden',
+        )}
       >
         {MOBILE_NAV.map((item) => (
           <NavLink

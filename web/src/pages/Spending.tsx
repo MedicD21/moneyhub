@@ -40,7 +40,7 @@ export default function Spending() {
         description="Transfers are excluded. Spending is net of refunds."
         actions={
           months.length > 0 ? (
-            <Field label="Month" className="w-48">
+            <Field label="Month" className="w-full sm:w-48">
               <MonthSelect months={months} value={month ?? ''} onChange={(m) => set({ month: m === latest ? null : m })} />
             </Field>
           ) : null
@@ -155,16 +155,16 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
       )}
 
       <div className="mt-4 -mx-4 overflow-x-auto sm:-mx-5">
-        <table className="w-full min-w-[34rem] text-sm">
+        <table className="w-full text-sm sm:min-w-[34rem]">
           <caption className="sr-only">Spending by category</caption>
           <thead>
             <tr className="border-y border-line text-left text-xs text-muted">
               <th scope="col" className="px-4 py-2 font-medium sm:px-5">Category</th>
-              <th scope="col" className="px-2 py-2 font-medium">Kind</th>
+              <th scope="col" className="hidden px-2 py-2 font-medium sm:table-cell">Kind</th>
               <th scope="col" className="px-2 py-2 text-right font-medium">Out</th>
-              <th scope="col" className="px-2 py-2 text-right font-medium">In</th>
-              <th scope="col" className="px-2 py-2 text-right font-medium">Net</th>
-              <th scope="col" className="px-4 py-2 text-right font-medium sm:px-5">Txns</th>
+              <th scope="col" className="hidden px-2 py-2 text-right font-medium sm:table-cell">In</th>
+              <th scope="col" className="py-2 pr-4 pl-2 text-right font-medium sm:pr-2">Net</th>
+              <th scope="col" className="hidden px-4 py-2 text-right font-medium sm:table-cell sm:px-5">Txns</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -173,17 +173,17 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
                 <th scope="row" className="px-4 py-2 text-left font-medium text-ink sm:px-5">
                   {label(r)}
                 </th>
-                <td className="px-2 py-2 text-muted">{r.category_kind ? humanize(r.category_kind) : 'Uncategorized'}</td>
+                <td className="hidden px-2 py-2 text-muted sm:table-cell">{r.category_kind ? humanize(r.category_kind) : 'Uncategorized'}</td>
                 <td className="px-2 py-2 text-right text-ink">
                   <Money value={r.total_out} />
                 </td>
-                <td className={cx('px-2 py-2 text-right', r.total_in > 0 ? 'text-pos' : 'text-ink')}>
+                <td className={cx('hidden px-2 py-2 text-right sm:table-cell', r.total_in > 0 ? 'text-pos' : 'text-ink')}>
                   <Money value={r.total_in} />
                 </td>
-                <td className="px-2 py-2 text-right text-ink">
+                <td className="py-2 pr-4 pl-2 text-right text-ink sm:pr-2">
                   <Money value={r.net} signed />
                 </td>
-                <td className="px-4 py-2 text-right text-muted tabular-nums sm:px-5">{formatCount(r.txn_count)}</td>
+                <td className="hidden px-4 py-2 text-right text-muted tabular-nums sm:table-cell sm:px-5">{formatCount(r.txn_count)}</td>
               </tr>
             ))}
           </tbody>

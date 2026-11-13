@@ -54,7 +54,7 @@ export default function Dashboard() {
           title="Bills due in the next 7 days"
           subtitle="Unpaid bills, including any that are overdue"
           action={
-            <Link to="/bills" className="text-xs font-medium text-accent underline-offset-2 hover:underline">
+            <Link to="/bills" className="-my-2.5 inline-flex min-h-10 shrink-0 items-center px-1 text-sm font-medium text-accent underline-offset-2 hover:underline">
               All bills
             </Link>
           }
@@ -93,7 +93,7 @@ export default function Dashboard() {
           title="Envelopes"
           subtitle="Virtual savings. No real money moves."
           action={
-            <Link to="/envelopes" className="text-xs font-medium text-accent underline-offset-2 hover:underline">
+            <Link to="/envelopes" className="-my-2.5 inline-flex min-h-10 shrink-0 items-center px-1 text-sm font-medium text-accent underline-offset-2 hover:underline">
               Manage
             </Link>
           }
@@ -297,7 +297,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
         <Card title="Needs attention">
           <ul className="space-y-1 text-sm">
             <li className="flex justify-between gap-2">
-              <Link to="/transactions?review=1" className="text-muted underline-offset-2 hover:text-ink hover:underline">
+              <Link to="/transactions?review=1" className="text-accent underline underline-offset-2 hover:text-ink">
                 To review
               </Link>
               <span className={cx('font-semibold tabular-nums', d.review_queue_count > 0 ? 'text-warn' : 'text-ink')}>

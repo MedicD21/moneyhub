@@ -179,7 +179,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
           <div className="text-sm font-semibold text-ink">{mode === 'in' ? `Add money to ${env.name}` : `Move money out of ${env.name}`}</div>
           <Field label="Amount">
             <input
-              className={cx(inputClass, 'text-lg font-semibold tabular-nums')}
+              className={cx(inputClass, 'text-lg! font-semibold tabular-nums')}
               value={amountText}
               onChange={(e) => setAmountText(sanitizeAmountInput(e.target.value))}
               inputMode="decimal"

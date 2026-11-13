@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FocusEvent, type FormEvent } from 'react';
 import { useView } from '../hooks/useView';
 import type { AccountRow, CategoryRow, VAppInfo, VDebt, VTransaction, VUpcomingBill } from '../types/db';
 import { addDays, formatCurrency, formatDate, todayLocal } from '../lib/format';
@@ -14,6 +14,7 @@ import { cx } from '../lib/cx';
 import { Banner, Button, Field, inputClass } from './ui';
 import { Icon } from './Icon';
 import { useEntry } from './EntryContext';
+import { useVisualViewport } from '../hooks/useVisualViewport';
 
 /**
  * Bottom sheet (mobile) / dialog (desktop) for adding or editing a manual transaction.
@@ -22,6 +23,7 @@ import { useEntry } from './EntryContext';
 export function TransactionSheet() {
   const { sheet, closeSheet } = useEntry();
   const [busy, setBusy] = useState(false);
+  const viewport = useVisualViewport();
 
   useEffect(() => {
     if (!sheet.open) return;
@@ -41,7 +43,9 @@ export function TransactionSheet() {
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-end justify-center md:items-center md:p-6"
+      className="fixed inset-x-0 top-0 z-40 flex h-dvh items-end justify-center pt-4 md:items-center md:p-6"
+      // Track the visible area so the iPhone keyboard never covers the sheet.
+      style={viewport.height > 0 ? { top: viewport.offsetTop, height: viewport.height } : undefined}
       onKeyDown={(e) => {
         if (e.key === 'Escape') close();
       }}
@@ -51,12 +55,22 @@ export function TransactionSheet() {
         role="dialog"
         aria-modal="true"
         aria-label={sheet.editing ? 'Edit entry' : 'Add transaction'}
-        className="relative max-h-[94dvh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-2xl"
+        className="relative max-h-full w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-2xl"
+        onFocus={keepFocusedFieldVisible}
       >
         <EntryForm key={sheet.session} editing={sheet.editing} onBusy={setBusy} />
       </div>
     </div>
   );
+}
+
+/** After the keyboard finishes sliding in, scroll the focused field into the sheet's visible area. */
+function keepFocusedFieldVisible(e: FocusEvent<HTMLDivElement>) {
+  const el = e.target;
+  if (!(el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement)) return;
+  window.setTimeout(() => {
+    if (document.activeElement === el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, 300);
 }
 
 const MONEY_ACCOUNT_KINDS = new Set(['checking', 'savings', 'cash']);
@@ -256,7 +270,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
       <label className="block">
         <span className="sr-only">Amount in dollars</span>
         <span className="flex items-baseline justify-center gap-1 rounded-xl border border-line bg-surface-2 px-3 py-3 focus-within:outline-2 focus-within:outline-accent">
-          <span className={cx('text-3xl font-semibold', direction === 'income' ? 'text-pos' : 'text-muted')} aria-hidden="true">
+          <span className={cx('shrink-0 text-3xl font-semibold whitespace-nowrap', direction === 'income' ? 'text-pos' : 'text-muted')} aria-hidden="true">
             {sign}$
           </span>
           <input

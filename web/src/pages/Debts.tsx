@@ -103,7 +103,73 @@ export default function Debts() {
 
 function DebtsTable({ rows }: { rows: VDebt[] }) {
   return (
-    <div className="-mx-4 overflow-x-auto sm:-mx-5">
+    <>
+      <DebtsList rows={rows} />
+      <DebtsWideTable rows={rows} />
+    </>
+  );
+}
+
+/** Phones: one stacked card per debt instead of an 8-column table. */
+function DebtsList({ rows }: { rows: VDebt[] }) {
+  return (
+    <ul className="-mx-4 divide-y divide-line border-t border-line sm:-mx-5 md:hidden">
+      {rows.map((d) => {
+        const promoActive = d.promo_apr !== null && d.effective_apr === d.promo_apr && d.promo_apr !== d.apr;
+        return (
+          <li key={d.debt_id} className={cx('px-4 py-3 sm:px-5', !d.is_active && 'opacity-75')}>
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-sm font-medium text-ink">{d.name}</span>
+                  {!d.is_active ? <Badge tone="muted">Inactive</Badge> : null}
+                </div>
+                <div className="mt-0.5 text-xs text-muted">{[humanize(d.kind), d.account_name].filter(Boolean).join(' · ')}</div>
+              </div>
+              <div className="shrink-0 text-right">
+                <Money value={d.balance} className="text-base font-semibold text-ink" />
+                <div className="text-[11px] text-muted">as of {formatDate(d.balance_as_of, 'short')}</div>
+              </div>
+            </div>
+            <dl className="mt-2 grid grid-cols-3 gap-2 text-xs">
+              <div className="min-w-0">
+                <dt className="text-muted">APR</dt>
+                <dd className="mt-0.5 text-sm text-ink tabular-nums">{formatPercent(d.effective_apr)}</dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-muted">Minimum</dt>
+                <dd className="mt-0.5 text-sm text-ink">
+                  <Money value={d.min_payment} />
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-muted">Next due</dt>
+                <dd className="mt-0.5 text-sm text-ink">{formatDate(d.next_due_date, 'short')}</dd>
+              </div>
+            </dl>
+            {promoActive ? (
+              <p className="mt-1 text-xs text-muted">
+                Promo until {formatDate(d.promo_ends, 'short')}, then {formatPercent(d.apr)}
+              </p>
+            ) : null}
+            {d.utilization_pct !== null ? (
+              <div className="mt-2">
+                <Utilization pct={d.utilization_pct} limit={d.credit_limit} />
+              </div>
+            ) : null}
+            <p className="mt-1 text-[11px] text-subtle">
+              Source: {d.balance_source === 'account_snapshot' ? 'Account screenshot' : d.balance_source === 'debt_balances' ? 'Debt balance' : '—'}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function DebtsWideTable({ rows }: { rows: VDebt[] }) {
+  return (
+    <div className="-mx-4 hidden overflow-x-auto sm:-mx-5 md:block">
       <table className="w-full min-w-[54rem] text-sm">
         <caption className="sr-only">Debts</caption>
         <thead>
@@ -335,7 +401,7 @@ function ProjectionChart({ rows }: { rows: VDebtPlanProjection[] }) {
       <details className="mt-2 text-sm">
         <summary className="cursor-pointer text-xs font-medium text-muted">Show as a table</summary>
         <div className="mt-2 -mx-4 max-h-80 overflow-auto sm:-mx-5">
-          <table className="w-full min-w-[28rem] text-sm">
+          <table className="w-full text-sm sm:min-w-[28rem]">
             <thead className="sticky top-0 bg-surface">
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th scope="col" className="px-4 py-2 font-medium sm:px-5">Month</th>

@@ -112,7 +112,14 @@ body {
   color: var(--text);
 }
 
+html {
+  /* Stop iOS from inflating text in landscape. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
+  -webkit-tap-highlight-color: transparent;
   margin: 0;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;

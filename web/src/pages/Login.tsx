@@ -77,7 +77,7 @@ export default function Login() {
             </Button>
           </form>
         </div>
-        <p className="mt-4 text-center text-xs text-muted">Read-only view of your Money Hub data.</p>
+        <p className="mt-4 text-center text-xs text-muted">Private to the Money Hub owner.</p>
       </div>
     </div>
   );
