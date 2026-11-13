@@ -38,7 +38,7 @@ const CHIP: Record<Visual, string> = {
   due: 'bg-surface-2 text-ink border-line',
   overdue: 'bg-danger-bg text-danger border-danger-line',
   partial: 'bg-warn-bg text-warn border-warn-line',
-  skipped: 'bg-surface text-subtle border-line border-dashed line-through',
+  skipped: 'bg-transparent text-subtle border-line border-dashed line-through',
 };
 
 const DOT: Record<Visual, string> = {
@@ -258,12 +258,12 @@ function Calendar({ month, today, rows }: { month: string; today: string | null;
               key={iso}
               aria-label={label}
               className={cx(
-                'min-h-14 min-w-0 rounded-lg border p-1 sm:min-h-20 sm:p-1.5',
-                isToday ? 'border-accent' : 'border-line',
-                items.length > 0 ? 'bg-surface' : 'bg-bg',
+                'min-h-14 min-w-0 rounded-xl border p-1 transition-colors sm:min-h-20 sm:p-1.5',
+                isToday ? 'nav-lit border-transparent' : 'border-line',
+                items.length > 0 ? 'bg-surface-2' : 'bg-black/20',
               )}
             >
-              <div className={cx('text-[11px] leading-4 tabular-nums', isToday ? 'font-bold text-accent' : 'text-muted')}>{day}</div>
+              <div className={cx('text-[11px] leading-4 tabular-nums', isToday ? 'font-bold text-accent-bright' : 'text-muted')}>{day}</div>
               {items.length > 0 ? (
                 <>
                   {/* phones: one dot per bill */}

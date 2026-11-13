@@ -50,12 +50,12 @@ export function TransactionSheet() {
         if (e.key === 'Escape') close();
       }}
     >
-      <div className="absolute inset-0 bg-black/50" aria-hidden="true" onClick={close} />
+      <div className="scrim absolute inset-0" aria-hidden="true" onClick={close} />
       <div
         role="dialog"
         aria-modal="true"
         aria-label={sheet.editing ? 'Edit entry' : 'Add transaction'}
-        className="relative max-h-full w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl border border-line bg-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-xl md:rounded-2xl"
+        className="glass glass-seam sheet-in relative max-h-full w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[26px] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:rounded-[26px] md:p-5"
         onFocus={keepFocusedFieldVisible}
       >
         <EntryForm key={sheet.session} editing={sheet.editing} onBusy={setBusy} />
@@ -238,18 +238,18 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
   return (
     <form id={formId} onSubmit={onSubmit} className="space-y-4" noValidate>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-ink">{editing ? 'Edit entry' : 'Add transaction'}</h2>
+        <h2 className="text-lg font-semibold tracking-tight text-ink">{editing ? 'Edit entry' : 'Add transaction'}</h2>
         <button
           type="button"
           onClick={() => !busy && closeSheet()}
           aria-label="Close"
-          className="grid h-10 w-10 place-items-center rounded-lg text-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+          className="btn-glass grid h-10 w-10 place-items-center rounded-xl text-muted hover:text-ink focus-visible:outline-2 focus-visible:outline-accent-bright"
         >
           <Icon name="close" size={20} />
         </button>
       </div>
 
-      <div role="radiogroup" aria-label="Type" className="grid grid-cols-2 gap-1 rounded-xl bg-surface-2 p-1">
+      <div role="radiogroup" aria-label="Type" className="field-well grid grid-cols-2 gap-1 rounded-2xl p-1">
         {(['expense', 'income'] as const).map((d) => (
           <button
             key={d}
@@ -258,8 +258,8 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
             aria-checked={direction === d}
             onClick={() => changeDirection(d)}
             className={cx(
-              'min-h-11 rounded-lg text-sm font-semibold focus-visible:outline-2 focus-visible:outline-accent',
-              direction === d ? 'bg-surface text-ink shadow-sm' : 'text-muted',
+              'min-h-11 rounded-xl text-sm font-semibold transition-all duration-300 focus-visible:outline-2 focus-visible:outline-accent-bright',
+              direction === d ? (d === 'income' ? 'nav-lit text-pos' : 'nav-lit text-ink') : 'text-muted transition-colors hover:text-ink',
             )}
           >
             {d === 'expense' ? 'Expense' : 'Income'}
@@ -269,8 +269,8 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
 
       <label className="block">
         <span className="sr-only">Amount in dollars</span>
-        <span className="flex items-baseline justify-center gap-1 rounded-xl border border-line bg-surface-2 px-3 py-3 focus-within:outline-2 focus-within:outline-accent">
-          <span className={cx('shrink-0 text-3xl font-semibold whitespace-nowrap', direction === 'income' ? 'text-pos' : 'text-muted')} aria-hidden="true">
+        <span className="field-well relative flex items-baseline justify-center gap-1 overflow-hidden rounded-2xl px-3 py-5">
+          <span className={cx('lit shrink-0 text-3xl font-semibold whitespace-nowrap', direction === 'income' ? 'text-pos' : 'text-muted')} aria-hidden="true">
             {sign}$
           </span>
           <input
@@ -283,7 +283,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
             enterKeyHint="done"
             placeholder="0.00"
             autoFocus
-            className="w-full min-w-0 bg-transparent text-center text-4xl font-semibold tabular-nums text-ink outline-none placeholder:text-subtle"
+            className="lit w-full min-w-0 bg-transparent text-center text-[2.75rem] leading-none font-semibold tracking-tight tabular-nums text-ink outline-none placeholder:text-subtle/60"
           />
         </span>
       </label>
@@ -320,8 +320,8 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
               onClick={() => setDate(value)}
               aria-pressed={effectiveDate === value}
               className={cx(
-                'min-h-10 rounded-lg border px-3 text-sm font-medium focus-visible:outline-2 focus-visible:outline-accent',
-                effectiveDate === value ? 'border-accent bg-accent-soft text-ink' : 'border-line text-muted',
+                'min-h-10 rounded-xl px-3 text-sm font-medium transition-all duration-300 focus-visible:outline-2 focus-visible:outline-accent-bright',
+                effectiveDate === value ? 'nav-lit text-ink' : 'btn-glass text-muted',
               )}
             >
               {label}
@@ -370,7 +370,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
         <input className={inputClass} value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} autoComplete="off" enterKeyHint="done" />
       </Field>
 
-      <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-line px-3 text-sm text-ink">
+      <label className="btn-glass flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm text-ink">
         <input type="checkbox" checked={cleared} onChange={(e) => setCleared(e.target.checked)} className="h-5 w-5 accent-[var(--accent)]" />
         Already cleared at my bank
       </label>
@@ -387,7 +387,7 @@ function EntryForm({ editing, onBusy }: { editing: VTransaction | null; onBusy: 
             Pays a bill or debt
           </button>
           {showMore ? (
-            <div className="mt-2 space-y-3 rounded-xl border border-line p-3">
+            <div className="page-enter mt-2 space-y-3 rounded-2xl border border-line bg-surface-2 p-3">
               <Field label="Bill">
                 <select className={inputClass} value={billId} onChange={(e) => chooseBill(e.target.value)}>
                   <option value="">Not a bill</option>

@@ -61,7 +61,7 @@ export default function Paychecks() {
             />
           );
           return (
-            <ol className="relative space-y-4 border-l-2 border-line pl-4 sm:pl-6">
+            <ol className="timeline stagger relative space-y-4 pl-4 sm:pl-6">
               {past.length > 0 ? (
                 <li className="relative">
                   <PastFolder count={past.length}>
@@ -92,7 +92,7 @@ function PastFolder({
       onToggle={(e) => setOpen(e.currentTarget.open)}
       className="group"
     >
-      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-3 text-sm font-semibold text-ink hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent [&::-webkit-details-marker]:hidden">
+      <summary className="glass glass-hover flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-[20px] px-4 py-3 text-sm font-semibold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-bright [&::-webkit-details-marker]:hidden">
         <Icon
           name="chevronRight"
           size={16}
@@ -132,28 +132,24 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
       <span
         aria-hidden="true"
         className={cx(
-          "absolute top-6 -left-[23px] h-3 w-3 rounded-full border-2 sm:-left-[31px]",
+          "absolute top-6 -left-[22.5px] h-3 w-3 rounded-full border-2 sm:-left-[30.5px]",
           current
-            ? "border-accent bg-accent"
+            ? "nav-dot border-accent-bright bg-accent-bright"
             : past
               ? "border-line bg-surface-2"
-              : "border-subtle bg-surface",
+              : "border-subtle bg-[var(--surface-solid)]",
         )}
       />
       <details
         open={open}
         onToggle={(e) => setOpen(e.currentTarget.open)}
+        data-tone={uncovered ? "danger" : current ? "accent" : undefined}
         className={cx(
-          "group rounded-2xl border bg-surface",
-          uncovered
-            ? "border-danger-line ring-1 ring-danger-line"
-            : current
-              ? "border-accent ring-1 ring-accent"
-              : "border-line",
+          "glass glass-seam rise group rounded-[20px]",
           past && !current && "opacity-85",
         )}
       >
-        <summary className="flex cursor-pointer list-none items-start gap-2 rounded-2xl p-4 hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:p-5 [&::-webkit-details-marker]:hidden">
+        <summary className="flex cursor-pointer list-none items-start gap-2 rounded-[20px] p-4 transition-colors hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-bright sm:p-5 [&::-webkit-details-marker]:hidden">
           <Icon
             name="chevronRight"
             size={16}

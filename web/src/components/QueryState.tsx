@@ -6,9 +6,9 @@ import { cx } from '../lib/cx';
 
 export function Skeleton({ lines = 3, className }: { lines?: number; className?: string }) {
   return (
-    <div className={cx('animate-pulse space-y-2.5', className)} aria-hidden="true">
+    <div className={cx('space-y-2.5', className)} aria-hidden="true">
       {Array.from({ length: lines }, (_, i) => (
-        <div key={i} className={cx('h-4 rounded bg-surface-2', i === lines - 1 ? 'w-2/3' : 'w-full')} />
+        <div key={i} className={cx('skeleton-bar h-4 rounded-md', i === lines - 1 ? 'w-2/3' : 'w-full')} />
       ))}
     </div>
   );
@@ -25,13 +25,13 @@ export function LoadingState({ label, lines = 3 }: { label: string; lines?: numb
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-xl border border-dashed border-line px-4 py-6 text-center text-sm text-muted">{children}</div>
+    <div className="rounded-2xl border border-dashed border-line-strong bg-surface-2 px-4 py-7 text-center text-sm text-muted">{children}</div>
   );
 }
 
 export function ErrorState({ label, message, onRetry }: { label: string; message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="rounded-xl border border-danger-line bg-danger-bg px-4 py-3 text-sm">
+    <div role="alert" className="rounded-2xl border border-danger-line bg-danger-bg px-4 py-3 text-sm backdrop-blur-md">
       <div className="flex items-start gap-2 text-danger">
         <Icon name="alert" size={18} className="mt-0.5 shrink-0" />
         <div className="min-w-0">

@@ -42,7 +42,7 @@ export function SetAsidesSection() {
   };
 
   return (
-    <section aria-labelledby="set-asides-title" className="mb-4 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+    <section aria-labelledby="set-asides-title" className="glass glass-seam rise mb-4 rounded-[20px] p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 id="set-asides-title" className="text-sm font-semibold text-ink">
@@ -113,7 +113,7 @@ function SetAsideItem({ r, onEdit, onChanged }: { r: VSetAside; onEdit: () => vo
   }
 
   return (
-    <li className={cx('rounded-xl border border-line bg-surface-2 p-3', !r.is_active && 'opacity-80')}>
+    <li className={cx('rounded-2xl border border-line bg-surface-2 p-3 transition-colors hover:border-line-strong', !r.is_active && 'opacity-80')}>
       <div className="flex items-baseline justify-between gap-3">
         <span className="flex min-w-0 flex-wrap items-center gap-1.5">
           <span className="truncate text-sm font-medium text-ink">{r.name}</span>
@@ -227,7 +227,7 @@ function SetAsideForm({ editing, onClose }: { editing: VSetAside | null; onClose
   );
 
   return (
-    <form onSubmit={(e) => void submit(e)} className="mt-3 space-y-3 rounded-xl border border-line p-3" noValidate>
+    <form onSubmit={(e) => void submit(e)} className="page-enter mt-3 space-y-3 rounded-2xl border border-line bg-surface-2 p-3" noValidate>
       <div className="text-sm font-semibold text-ink">{editing ? `Edit ${editing.name}` : 'New set-aside'}</div>
       <Field label="Name">
         <input

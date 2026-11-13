@@ -2,7 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { configError } from './lib/supabase';
 import { AuthProvider, useAuth } from './hooks/useAuth';
-import { Layout } from './components/Layout';
+import { Ambient, BrandMark, Layout } from './components/Layout';
 import { LoadingState } from './components/QueryState';
 import Login from './pages/Login';
 import SetupError from './pages/SetupError';
@@ -18,8 +18,12 @@ const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Splash() {
   return (
-    <div className="grid min-h-dvh place-items-center bg-bg" role="status" aria-live="polite">
-      <span className="text-sm text-muted">Loading Money Hub…</span>
+    <div className="grid min-h-dvh place-items-center" role="status" aria-live="polite">
+      <Ambient />
+      <div className="flex flex-col items-center gap-4">
+        <BrandMark size="lg" />
+        <span className="text-sm text-muted">Loading Money Hub…</span>
+      </div>
     </div>
   );
 }

@@ -49,12 +49,12 @@ export default function Dashboard() {
         }}
       </QueryState>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="stagger mt-4 grid items-start gap-4 lg:grid-cols-2">
         <Card
           title="Bills due in the next 7 days"
           subtitle="Unpaid bills, including any that are overdue"
           action={
-            <Link to="/bills" className="-my-2.5 inline-flex min-h-10 shrink-0 items-center px-1 text-sm font-medium text-accent underline-offset-2 hover:underline">
+            <Link to="/bills" className="btn-glass -my-2 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-accent-bright focus-visible:outline-2 focus-visible:outline-accent-bright">
               All bills
             </Link>
           }
@@ -68,7 +68,7 @@ export default function Dashboard() {
                   {bills.map((b) => {
                     const badge = billStatusBadge(b.status, b.overdue);
                     return (
-                      <li key={b.occurrence_id} className="flex items-center justify-between gap-3 py-2.5">
+                      <li key={b.occurrence_id} className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-2">
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5">
                             <span className="truncate text-sm font-medium text-ink">{b.bill_name}</span>
@@ -89,11 +89,12 @@ export default function Dashboard() {
           )}
         </Card>
 
+        <div className="stagger grid gap-4">
         <Card
           title="Envelopes"
           subtitle="Virtual savings. No real money moves."
           action={
-            <Link to="/envelopes" className="-my-2.5 inline-flex min-h-10 shrink-0 items-center px-1 text-sm font-medium text-accent underline-offset-2 hover:underline">
+            <Link to="/envelopes" className="btn-glass -my-2 inline-flex min-h-9 shrink-0 items-center gap-1 rounded-full px-3 text-xs font-semibold text-accent-bright focus-visible:outline-2 focus-visible:outline-accent-bright">
               Manage
             </Link>
           }
@@ -102,7 +103,7 @@ export default function Dashboard() {
             {(list) => (
               <ul className="-my-1 divide-y divide-line">
                 {list.map((e) => (
-                  <li key={e.id} className="flex items-center justify-between gap-3 py-2.5">
+                  <li key={e.id} className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-2">
                     <span className="truncate text-sm font-medium text-ink">{e.name}</span>
                     <Money value={e.balance} className="shrink-0 text-sm font-semibold" />
                   </li>
@@ -117,7 +118,7 @@ export default function Dashboard() {
             {(list) => (
               <ul className="-my-1 divide-y divide-line">
                 {list.map((a) => (
-                  <li key={a.account_id} className="flex items-center justify-between gap-3 py-2.5">
+                  <li key={a.account_id} className="-mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-2.5 transition-colors hover:bg-surface-2">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span className="truncate text-sm font-medium text-ink">{a.name}</span>
@@ -142,6 +143,7 @@ export default function Dashboard() {
             )}
           </QueryState>
         </Card>
+        </div>
       </div>
     </>
   );
@@ -190,19 +192,15 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card title="Net position">
-          <Stat label="Net (cash minus debt)" value={<Money value={d.net} />} emphasis tone={d.net < 0 ? 'danger' : 'default'} />
-          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3">
-            <Stat label="Cash" value={<Money value={d.total_cash} />} />
-            <Stat label="Debt" value={<Money value={d.total_debt} />} />
-          </div>
-        </Card>
-
+      <div className="stagger grid gap-4 lg:grid-cols-[1.3fr_1fr]">
         <Card
           title="Safe to spend"
+          icon="wallet"
+          iconTone={shortfall ? 'danger' : 'accent'}
           subtitle={hasPeriod ? `This pay period · ${formatDateRange(d.period_start, d.period_end)}` : 'This pay period'}
           tone={shortfall ? 'danger' : 'accent'}
+          beacon
+          className="flex flex-col"
           action={
             shortfall ? <Badge tone="danger">Shortfall</Badge> : !f && d.overspent ? <Badge tone="danger">Overspent</Badge> : null
           }
@@ -213,6 +211,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
                 label="Rest of this period"
                 value={<Money value={f.safe_to_spend} />}
                 emphasis
+                reticle
                 tone={f.safe_to_spend < 0 ? 'danger' : 'default'}
                 hint={
                   f.safe_to_spend < 0
@@ -220,7 +219,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
                     : 'Steady amount that still covers short paychecks ahead'
                 }
               />
-              <div className="mt-3 divide-y divide-line border-t border-line">
+              <div className="mt-6 divide-y divide-line border-t border-line lg:mt-auto">
                 {f.hold_for_later > 0 ? (
                   <Row label="Held back for later paychecks">
                     <Money value={f.hold_for_later} />
@@ -251,12 +250,13 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
                 label="Remaining"
                 value={<Money value={d.remaining_safe_to_spend} />}
                 emphasis
+                reticle
                 tone={d.overspent ? 'danger' : 'default'}
               />
               {spentRatio !== null ? (
                 <Meter percent={spentRatio * 100} thickness="md" className="mt-3" />
               ) : null}
-              <div className="mt-3 divide-y divide-line border-t border-line">
+              <div className="mt-6 divide-y divide-line border-t border-line lg:mt-auto">
                 <Row label="Safe to spend">
                   <Money value={d.safe_to_spend} />
                 </Row>
@@ -272,27 +272,34 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
             <p className="text-sm text-muted">No active income source covers today, so there’s no current pay period.</p>
           )}
         </Card>
-      </div>
+        <div className="stagger grid content-start gap-4">
+        <Card title="Net position" icon="chart" iconTone="muted">
+          <Stat label="Net (cash minus debt)" value={<Money value={d.net} />} large tone={d.net < 0 ? 'danger' : 'default'} />
+          <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-3">
+            <Stat label="Cash" value={<Money value={d.total_cash} />} />
+            <Stat label="Debt" value={<Money value={d.total_debt} />} />
+          </div>
+        </Card>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Card title="Next payday">
+      <div className="stagger grid grid-cols-2 gap-4">
+        <Card title="Next payday" icon="calendar">
           {d.next_payday ? (
             <Stat label={formatDate(d.next_payday, 'weekday')} value={<Money value={d.next_payday_amount} />} tone="pos" />
           ) : (
             <p className="text-sm text-muted">None in the next 10 weeks.</p>
           )}
         </Card>
-        <Card title="Due in 7 days">
+        <Card title="Due in 7 days" icon="list">
           <Stat label={`${formatCount(d.bills_due_7d_count)} bill${d.bills_due_7d_count === 1 ? '' : 's'}`} value={<Money value={d.bills_due_7d_total} />} />
         </Card>
-        <Card title="Overdue" tone={d.overdue_bills_count > 0 ? 'danger' : 'default'}>
+        <Card title="Overdue" tone={d.overdue_bills_count > 0 ? 'danger' : 'default'} icon="alert" iconTone={d.overdue_bills_count > 0 ? 'danger' : 'muted'}>
           <Stat
             label={`${formatCount(d.overdue_bills_count)} bill${d.overdue_bills_count === 1 ? '' : 's'}`}
             value={<Money value={d.overdue_bills_total} />}
             tone={d.overdue_bills_count > 0 ? 'danger' : 'default'}
           />
         </Card>
-        <Card title="Needs attention">
+        <Card title="Needs attention" icon="info" iconTone={d.review_queue_count > 0 || d.balance_check_issues > 0 ? 'warn' : d.low_balance_accounts > 0 ? 'danger' : 'muted'}>
           <ul className="space-y-1 text-sm">
             <li className="flex justify-between gap-2">
               <Link to="/transactions?review=1" className="text-accent underline underline-offset-2 hover:text-ink">
@@ -316,6 +323,8 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
             </li>
           </ul>
         </Card>
+      </div>
+        </div>
       </div>
     </div>
   );

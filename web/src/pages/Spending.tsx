@@ -10,7 +10,7 @@ import { QueryState } from '../components/QueryState';
 import { useId } from 'react';
 import { ChartFrame, ChartLegend, MoneyTooltip } from '../components/charts';
 import { hudActiveDot, hudDefs, hudFill, hudGlow } from '../components/hudDefs';
-import { axisLine, axisTick, barCursor, chartMotion, gridDash, gridStroke, seriesColor, svgId } from '../components/chartTheme';
+import { axisLine, axisTick, barCursor, chartMotion, gridDash, gridStroke, svgId } from '../components/chartTheme';
 
 const CHART_MONTHS = 12;
 
@@ -145,7 +145,7 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
         <ChartFrame style={{ height: chartRows.length * 34 + 32 }} label="Horizontal bar chart of money out per category">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartRows} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-              <defs>{hudDefs(uid, [{ key: 'out', color: seriesColor(0), kind: 'bar' }])}</defs>
+              <defs>{hudDefs(uid, [{ key: 'out', color: 'var(--spending)', kind: 'bar' }])}</defs>
               <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} horizontal={false} />
               <XAxis type="number" tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={axisLine} tickLine={false} />
               <YAxis
@@ -168,7 +168,7 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
                   />
                 )}
               />
-              <Bar dataKey="total_out" name="Money out" stroke={seriesColor(0)} strokeWidth={0} fill={hudFill(uid, 'bar', 'out')} radius={[1, 5, 5, 1]} maxBarSize={22} {...chartMotion(0)} />
+              <Bar dataKey="total_out" name="Money out" stroke="var(--spending)" strokeWidth={0} fill={hudFill(uid, 'bar', 'out')} radius={[1, 5, 5, 1]} maxBarSize={22} {...chartMotion(0)} />
             </BarChart>
           </ResponsiveContainer>
         </ChartFrame>

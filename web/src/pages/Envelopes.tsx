@@ -343,7 +343,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
       ) : null}
 
       {mode ? (
-        <form onSubmit={(e) => void submit(e)} className="mt-3 space-y-3 rounded-xl border border-line p-3" noValidate>
+        <form onSubmit={(e) => void submit(e)} className="page-enter mt-3 space-y-3 rounded-2xl border border-line bg-surface-2 p-3" noValidate>
           <div className="text-sm font-semibold text-ink">{mode === 'in' ? `Add money to ${env.name}` : `Move money out of ${env.name}`}</div>
           <Field label="Amount">
             <input
@@ -417,7 +417,7 @@ function GoalEditForm({ env, onDone }: { env: VEnvelope; onDone: () => void }) {
         e.preventDefault();
         void save(true);
       }}
-      className="mt-3 space-y-3 rounded-xl border border-line p-3"
+      className="page-enter mt-3 space-y-3 rounded-2xl border border-line bg-surface-2 p-3"
       noValidate
     >
       <Field label="Name">

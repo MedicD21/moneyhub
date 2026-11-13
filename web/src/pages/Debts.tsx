@@ -443,7 +443,7 @@ function ProjectionChart({ rows }: { rows: VDebtPlanProjection[] }) {
         <summary className="cursor-pointer text-xs font-medium text-muted">Show as a table</summary>
         <div className="mt-2 -mx-4 max-h-80 overflow-auto sm:-mx-5">
           <table className="w-full text-sm sm:min-w-[28rem]">
-            <thead className="sticky top-0 bg-surface">
+            <thead className="sticky top-0 z-10 bg-[var(--surface-solid)]">
               <tr className="border-b border-line text-left text-xs text-muted">
                 <th scope="col" className="px-4 py-2 font-medium sm:px-5">Month</th>
                 <th scope="col" className="px-2 py-2 text-right font-medium">Payment</th>

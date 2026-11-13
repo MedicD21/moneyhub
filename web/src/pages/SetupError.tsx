@@ -1,7 +1,7 @@
 export default function SetupError({ message }: { message: string }) {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-bg px-4 py-10">
-      <div role="alert" className="w-full min-w-0 max-w-lg rounded-2xl border border-danger-line bg-surface p-6">
+      <div role="alert" className="glass w-full min-w-0 max-w-lg rounded-[24px] p-6" data-tone="danger">
         <h1 className="text-lg font-semibold text-danger">Money Hub isn’t configured</h1>
         <p className="mt-2 text-sm break-words text-ink">{message}</p>
         <p className="mt-4 text-sm text-muted">Set these environment variables, then restart the dev server or redeploy:</p>

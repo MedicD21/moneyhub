@@ -6,22 +6,22 @@ import { cx } from '../lib/cx';
 /** Prev / label / next stepper over first-of-month ISO dates. */
 export function MonthStepper({ value, onChange }: { value: string; onChange: (month: string) => void }) {
   return (
-    <div className="inline-flex items-center rounded-lg border border-line bg-surface">
+    <div className="btn-glass inline-flex items-center rounded-xl">
       <button
         type="button"
         onClick={() => onChange(addMonths(value, -1))}
-        className="grid h-10 w-10 place-items-center rounded-l-lg text-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        className="grid h-10 w-10 place-items-center rounded-l-xl text-muted transition-colors hover:bg-surface-2 hover:text-accent-bright focus-visible:outline-2 focus-visible:outline-accent-bright"
         aria-label={`Previous month (${formatMonth(addMonths(value, -1))})`}
       >
         <Icon name="chevronLeft" size={18} />
       </button>
-      <span className="min-w-32 px-2 text-center text-sm font-medium text-ink" aria-live="polite">
+      <span className="min-w-32 px-2 text-center text-sm font-semibold tabular-nums text-ink" aria-live="polite">
         {formatMonth(value)}
       </span>
       <button
         type="button"
         onClick={() => onChange(addMonths(value, 1))}
-        className="grid h-10 w-10 place-items-center rounded-r-lg text-muted hover:bg-surface-2 hover:text-ink focus-visible:outline-2 focus-visible:outline-accent"
+        className="grid h-10 w-10 place-items-center rounded-r-xl text-muted transition-colors hover:bg-surface-2 hover:text-accent-bright focus-visible:outline-2 focus-visible:outline-accent-bright"
         aria-label={`Next month (${formatMonth(addMonths(value, 1))})`}
       >
         <Icon name="chevronRight" size={18} />

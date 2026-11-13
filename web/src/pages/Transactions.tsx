@@ -239,7 +239,8 @@ function TransactionRow({ t }: { t: VTransaction }) {
     bump();
   }
   return (
-    <li className={cx('px-4 py-3 sm:px-5', t.needs_review && 'border-l-4 border-warn-line bg-warn-bg/60 pl-3 sm:pl-4')}>
+    <li className={cx('relative px-4 py-3 transition-colors hover:bg-surface-2 sm:px-5', t.needs_review && 'bg-warn-bg')}>
+      {t.needs_review ? <span className="absolute top-[1.2rem] left-1.5 h-1.5 w-1.5 rounded-full bg-warn sm:left-2" style={{ boxShadow: '0 0 10px 2px rgba(245,193,90,0.55)' }} aria-hidden="true" /> : null}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-1.5">

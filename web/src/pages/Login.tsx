@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { supabase } from '../lib/supabase';
 import { describeSignInError } from '../lib/authErrors';
 import { Banner, Button, Field, inputClass } from '../components/ui';
+import { Ambient, BrandMark } from '../components/Layout';
 
 type Status = { kind: 'idle' } | { kind: 'signing-in' } | { kind: 'error'; message: string };
 
@@ -26,20 +27,21 @@ export default function Login() {
   }
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-bg px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-center gap-2">
-          <span className="grid h-10 w-10 place-items-center rounded-xl bg-accent text-accent-ink" aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="24" height="24">
-              <path d="M9 21V11l7 6 7-6v10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </span>
-          <h1 className="text-xl font-semibold tracking-tight text-ink">Money Hub</h1>
+    <div className="grid min-h-dvh place-items-center px-4 py-10">
+      <Ambient />
+      <div className="relative w-full max-w-sm">
+        <span className="beacon !top-[-10%] !left-[-30%] !w-[160%]" aria-hidden="true" />
+        <div className="rise mb-7 flex flex-col items-center gap-4 text-center">
+          <BrandMark size="lg" />
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight text-ink">Money Hub</h1>
+            <p className="mt-1 text-sm text-muted">Sign in to see what’s safe to spend.</p>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-line bg-surface p-5 sm:p-6">
+        <div className="glass glass-seam rise rounded-[26px] p-5 sm:p-6" style={{ ['--d' as string]: '120ms' }}>
           <form onSubmit={(e) => void onSubmit(e)} className="space-y-4" noValidate>
-            <h2 className="text-base font-semibold text-ink">Sign in</h2>
+            <h2 className="sr-only">Sign in</h2>
             <Field label="Email">
               <input
                 type="email"
@@ -71,13 +73,13 @@ export default function Login() {
               type="submit"
               variant="primary"
               disabled={status.kind === 'signing-in' || !email.trim() || !password}
-              className="w-full"
+              className="min-h-12 w-full text-base"
             >
               {status.kind === 'signing-in' ? 'Signing in…' : 'Sign in'}
             </Button>
           </form>
         </div>
-        <p className="mt-4 text-center text-xs text-muted">Private to the Money Hub owner.</p>
+        <p className="mt-5 text-center text-xs text-subtle">Private to the Money Hub owner.</p>
       </div>
     </div>
   );
