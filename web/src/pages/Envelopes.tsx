@@ -51,7 +51,7 @@ export default function Envelopes() {
                 <li key={m.id} className="flex items-start justify-between gap-3 px-4 py-3 sm:px-5">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-ink">
-                      {m.amount > 0 ? 'Set aside into' : 'Moved out of'} {m.envelope_name}
+                      {m.amount > 0 ? 'Added to' : 'Moved out of'} {m.envelope_name}
                     </div>
                     <div className="mt-0.5 text-xs text-muted">
                       {formatDate(m.move_date)} · balance after {formatCurrency(m.balance_after)}
@@ -112,7 +112,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
       setError(res.error);
       return;
     }
-    setDone(`${mode === 'in' ? 'Set aside' : 'Moved out'} ${formatCurrency(dollars)}. New balance ${formatCurrency(res.data)}.`);
+    setDone(`${mode === 'in' ? 'Added' : 'Moved out'} ${formatCurrency(dollars)}. New balance ${formatCurrency(res.data)}.`);
     setMode(null);
     setAmountText('');
     bump();
@@ -196,7 +196,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
           </Field>
           <p className="text-xs text-muted">
             {mode === 'in'
-              ? 'This lowers the cash the forecast treats as spendable. It cannot exceed the cash you have.'
+              ? 'This lowers the cash the forecast treats as spendable. Envelopes can hold only cash that set-asides are not already holding.'
               : locked
                 ? 'This puts the money back into spendable cash and into the forecast.'
                 : 'This puts the money back into spendable cash, which raises your safe-to-spend.'}

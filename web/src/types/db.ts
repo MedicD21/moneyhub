@@ -437,7 +437,7 @@ export type PaycheckSetAsideItem = {
   amount: number;
   per_paycheck: number;
   cap: number | null;
-  /** envelope balance after this payday's contribution (assumes no further spending) */
+  /** set-aside balance after this payday's contribution (assumes no further spending) */
   balance_after: number;
   /** contribution was reduced or stopped by the cap */
   capped: boolean;

@@ -50,7 +50,7 @@ app owner (`20261113000000_manual_entry_and_envelopes.sql`):
 | --- | --- |
 | `add_manual_transaction` / `update_manual_transaction` / `delete_manual_transaction` | The + button and the Edit action on manual rows |
 | `set_transaction_cleared` | The Cleared checkbox |
-| `move_envelope_money` | Rainy-day fund and locked savings moves (virtual; no real money moves) |
+| `move_envelope_money` | Rainy-day fund and locked savings moves (virtual; no real money moves). A move in is refused if envelopes plus set-aside balances would exceed real cash (`20261113030000`) |
 
 - Manual rows are stored as `pending`, so balances count them until Claude's next screenshot import.
 - **Reconciled is Claude-only.** `reconcile_transactions` / `unreconcile_transactions` are not

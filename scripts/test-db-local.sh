@@ -46,9 +46,11 @@ echo "==> Supabase shim"
 "${PSQL[@]}" -f "$ROOT/scripts/local/supabase_shim.sql"
 
 echo "==> Migrations"
+# Seed rows (e.g. paid_holidays) default owner_id to app_owner_id(), which is null in an empty database.
+# Production had an owner when they ran; give this throwaway cluster a placeholder JWT subject instead.
 for f in "$ROOT"/supabase/migrations/*.sql; do
   echo "    $(basename "$f")"
-  "${PSQL[@]}" -f "$f"
+  PGOPTIONS="-c request.jwt.claim.sub=00000000-0000-0000-0000-00000000dead" "${PSQL[@]}" -f "$f"
 done
 
 echo "==> Tests"

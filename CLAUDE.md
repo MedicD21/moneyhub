@@ -11,7 +11,7 @@ Read `SPEC.md` for the design and `docs/CLAUDE_PROJECT_INSTRUCTIONS.md` to see w
    `add_manual_transaction`, `update_manual_transaction`, `delete_manual_transaction`, `set_transaction_cleared`, `move_envelope_money`.
    Adding a sixth is a deliberate decision: ask first, then update the whitelist in `web/tests/readonly-guard.test.ts` and keep `eslint.config.js` consistent.
 3. **Reconciliation is Claude-chat-only.** `reconcile_transactions` / `unreconcile_transactions` are never granted to `authenticated` and must never appear anywhere in `web/src` (a test enforces this). A trigger (`guard_transaction_reconciliation`) blocks web sessions from changing `reconciled`, `reconciled_at`, `entry_source`, from editing amount/date/account/status of reconciled rows, and from deleting reconciled or imported rows. Do not weaken it.
-4. **Envelopes are virtual.** Rainy-day fund and locked savings change what the forecast treats as spendable. No real money moves. The locked savings is never used by the forecast. The rainy-day fund is manual moves only. A suggested draw is shown but never applied automatically.
+4. **Envelopes are virtual.** "Envelope" means only the rainy-day fund and locked savings (`public.envelopes`); set-asides (`public.set_asides`) are not envelopes. Rainy-day fund and locked savings change what the forecast treats as spendable. No real money moves. The locked savings is never used by the forecast. The rainy-day fund is manual moves only. A suggested draw is shown but never applied automatically.
 5. **Never put credentials in code, commits, logs or chat.** The web bundle holds only the Supabase URL and anon key (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`).
 6. **Don't invent data.** No made-up balances, rates, pay figures or dates. Pay rates, holidays and bill amounts come from the database or from Dustin.
 
@@ -35,11 +35,11 @@ Run from the repo root or `web/`. Requires Node 22+.
 ## Database and migrations
 
 - Migrations live in `supabase/migrations/` as `YYYYMMDDHHMMSS_name.sql`. Add new ones with a later timestamp. Never edit an applied migration.
-- Production is already at `20261113000000_manual_entry_and_envelopes.sql`. Those migrations were run by hand in the Supabase SQL editor, so the CLI's migration history may not list them. Check `supabase migration list` before any `supabase db push`, so nothing gets re-applied. [unverified]
+- Production is at `20261113030000_envelope_cap_counts_set_aside_reserves.sql` (applied 2026-11-12). Production's history records versions by apply time (that one is `20261113023449`), and `forecast_explain_columns` and `manual_entry_and_envelopes` were run by hand, so they are missing from it. Match by name, not version. Check `supabase migration list` before any `supabase db push`, so nothing gets re-applied. [unverified]
 - Views must be `security_invoker`. `create or replace view` can reset that, so re-assert it (see `20261112165829_restore_security_invoker_on_recreated_views.sql`).
 - `SECURITY DEFINER` functions use `set search_path = ''`, fully qualify names, and call `assert_app_owner()` first.
 - `pay_period_forecast` is the heart of the forecast. Change it only with a test and a before/after comparison of production values (cash 2049.33 and safe_to_spend 0.10 were the last verified figures on 2026-11-12, and will move as real data arrives).
-- Prefer adding a pgTAP test under `supabase/tests/database` for any new function, trigger or view. The manual-entry and envelope migration has none yet.
+- Prefer adding a pgTAP test under `supabase/tests/database` for any new function, trigger or view.
 
 ## Domain facts worth knowing
 
@@ -54,4 +54,10 @@ Run from the repo root or `web/`. Requires Node 22+.
 - Read the surrounding code and the related migrations before changing anything. Change every file a change touches (types, tests, docs).
 - When changing behavior, update `web/README.md` and `docs/CLAUDE_PROJECT_INSTRUCTIONS.md` if the chat-side workflow is affected.
 - Known stale text: the root `README.md` and `package.json` still call the web app "read-only". Fix when next touching them.
-- Do not run destructive SQL against production. Show the SQL and let Dustin run it, or test it locally first.
+- Dustin has approved Claude Code applying migrations to production. Rules for doing so:
+  1. Test locally first with `scripts/test-db-local.sh` and get it passing.
+  2. Before applying, record the key production values (`v_dashboard`, `v_pay_period_forecast` current row, row counts of tables the migration touches). After applying, re-query and report the before and after. Unexpected changes mean stop and tell Dustin.
+  3. Migrations must be all-or-nothing (one transaction, or checks that raise before changing anything).
+  4. Ask before anything destructive or irreversible: `drop table`, `drop column`, `truncate`, `delete` or `update` of existing rows without a tight `where`, or changing grants on `authenticated`. Never touch Dustin's financial data (transactions, debts, balances, pay overrides) unless that is the explicit task.
+  5. Check `supabase migration list` first so applied migrations are not re-run, and keep the repo file and production identical.
+  6. Report what was applied, by file name.
