@@ -1,4 +1,4 @@
-/** Chart styling shared by every Recharts chart. Colors are CSS vars so light/dark switch automatically. */
+/** Chart styling shared by every Recharts chart. Colors are CSS vars from index.css (dark only). */
 
 /** Categorical series colors (validated palette). Fixed order, never cycled: past 8 series fall back to gray. */
 const SERIES = ['--series-1', '--series-2', '--series-3', '--series-4', '--series-5', '--series-6', '--series-7', '--series-8'];

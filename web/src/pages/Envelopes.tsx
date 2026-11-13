@@ -296,7 +296,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
         ) : null
       }
     >
-      <Stat label="Balance" value={<Money value={env.balance} />} emphasis />
+      <Stat label="Balance" value={<Money value={env.balance} />} large />
       <div className="mt-1 text-xs text-muted">
         {env.last_move_date ? `Last move ${formatDate(env.last_move_date)}` : 'Nothing moved yet'}
       </div>
