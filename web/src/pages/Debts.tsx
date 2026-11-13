@@ -1,4 +1,5 @@
 import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useId } from 'react';
 import { useView, type ViewState } from '../hooks/useView';
 import type {
   Json,
@@ -20,11 +21,12 @@ import {
   isoToDayNumber,
   parseIsoDate,
 } from '../lib/format';
-import { Badge, Card, CollapsibleCard, Money, PageHeader, Row } from '../components/ui';
+import { Badge, Card, CollapsibleCard, Meter, Money, PageHeader, Row } from '../components/ui';
 import { cx } from '../lib/cx';
 import { EmptyState, ErrorState, LoadingState, QueryState } from '../components/QueryState';
-import { MoneyTooltip } from '../components/charts';
-import { axisLine, axisTick, gridStroke, seriesColor } from '../components/chartTheme';
+import { ChartFrame, MoneyTooltip } from '../components/charts';
+import { hudActiveDot, hudDefs, hudFill, hudGlow } from '../components/hudDefs';
+import { axisLine, axisTick, chartMotion, gridDash, gridStroke, lineCursor, seriesColor, svgId } from '../components/chartTheme';
 
 export default function Debts() {
   const debts = useView<VDebt>('v_debts', (sb) =>
@@ -230,7 +232,7 @@ function DebtsWideTable({ rows }: { rows: VDebt[] }) {
 }
 
 function Utilization({ pct, limit }: { pct: number; limit: number | null }) {
-  const tone = pct >= 90 ? 'bg-danger' : pct >= 30 ? 'bg-warn' : 'bg-pos';
+  const tone = pct >= 90 ? 'danger' : pct >= 30 ? 'warn' : 'pos';
   return (
     <div className="min-w-32">
       <div className="flex items-baseline justify-between gap-2 text-xs">
@@ -238,16 +240,29 @@ function Utilization({ pct, limit }: { pct: number; limit: number | null }) {
         {limit !== null ? <span className="text-muted">of {formatCurrency(limit)}</span> : null}
       </div>
       {/* bar width is chart scaling of the view's utilization_pct */}
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
-        <div className={cx('h-full rounded-full', tone)} style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
-      </div>
+      <Meter percent={pct} tone={tone} className="mt-1" />
     </div>
   );
 }
 
 type HistoryPoint = VDebtBalanceHistory & { x: number };
 
+/** Color dot plus name, used in chart captions. */
+function SeriesName({ name, color }: { name: string; color: string }) {
+  return (
+    <span className="flex min-w-0 items-center gap-1.5 font-medium text-ink">
+      <span
+        className="h-2.5 w-2.5 shrink-0 rounded-full"
+        style={{ background: color, boxShadow: `0 0 0 2px color-mix(in oklab, ${color} 22%, transparent)` }}
+        aria-hidden="true"
+      />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
 function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorFor: (id: string, fallback: number) => string }) {
+  const uid = svgId(useId());
   const groups = new Map<string, { name: string; points: HistoryPoint[] }>();
   for (const r of rows) {
     const g = groups.get(r.debt_id) ?? { name: r.debt_name, points: [] };
@@ -260,18 +275,21 @@ function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorF
       {entries.map(([debtId, g], i) => {
         const color = colorFor(debtId, i);
         return (
-          <figure key={debtId} className="min-w-0 rounded-xl border border-line p-3">
-            <figcaption className="mb-1 flex items-center justify-between gap-2 text-sm">
-              <span className="flex min-w-0 items-center gap-1.5 font-medium text-ink">
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: color }} aria-hidden="true" />
-                <span className="truncate">{g.name}</span>
+          <ChartFrame
+            key={debtId}
+            className="h-44"
+            label={`Balance history for ${g.name}`}
+            caption={
+              <span className="flex items-center justify-between gap-2 text-sm">
+                <SeriesName name={g.name} color={color} />
+                <span className="text-xs text-muted">{formatCount(g.points.length)} point{g.points.length === 1 ? '' : 's'}</span>
               </span>
-              <span className="text-xs text-muted">{formatCount(g.points.length)} point{g.points.length === 1 ? '' : 's'}</span>
-            </figcaption>
-            <div className="h-44 w-full" role="img" aria-label={`Balance history for ${g.name}`}>
+            }
+          >
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={g.points} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-                  <CartesianGrid stroke={gridStroke} vertical={false} />
+                  <defs>{hudDefs(uid, [{ key: debtId, color, kind: 'line' }])}</defs>
+                  <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} vertical={false} />
                   <XAxis
                     dataKey="x"
                     type="number"
@@ -285,6 +303,7 @@ function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorF
                   />
                   <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={56} />
                   <Tooltip
+                    cursor={lineCursor}
                     content={(p) => (
                       <MoneyTooltip
                         active={p.active}
@@ -295,11 +314,19 @@ function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorF
                       />
                     )}
                   />
-                  <Line dataKey="balance" name="Balance" stroke={color} strokeWidth={2} dot={{ r: 4, fill: color, stroke: 'var(--surface)', strokeWidth: 2 }} activeDot={{ r: 5 }} isAnimationActive={false} />
+                  <Line
+                    dataKey="balance"
+                    name="Balance"
+                    stroke={color}
+                    strokeWidth={2}
+                    filter={hudGlow(uid, debtId)}
+                    dot={{ r: 3.5, fill: color, stroke: 'var(--surface)', strokeWidth: 2 }}
+                    activeDot={hudActiveDot(color)}
+                    {...chartMotion(i * 80)}
+                  />
                 </LineChart>
               </ResponsiveContainer>
-            </div>
-          </figure>
+          </ChartFrame>
         );
       })}
     </div>
@@ -373,15 +400,19 @@ function formatJsonScalar(key: string, v: Json): string {
 }
 
 function ProjectionChart({ rows }: { rows: VDebtPlanProjection[] }) {
+  const uid = svgId(useId());
+  const color = seriesColor(0);
   return (
     <>
-      <div className="h-56 w-full sm:h-64" role="img" aria-label="Line chart of projected total debt balance by month">
+      <ChartFrame className="h-56 sm:h-64" label="Area chart of projected total debt balance by month">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid stroke={gridStroke} vertical={false} />
+          <AreaChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <defs>{hudDefs(uid, [{ key: 'total', color, kind: 'area' }])}</defs>
+            <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} vertical={false} />
             <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={40} />
             <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={56} />
             <Tooltip
+              cursor={lineCursor}
               content={(p) => (
                 <MoneyTooltip
                   active={p.active}
@@ -394,10 +425,20 @@ function ProjectionChart({ rows }: { rows: VDebtPlanProjection[] }) {
                 />
               )}
             />
-            <Line dataKey="total_end_balance" name="Total balance" stroke={seriesColor(0)} strokeWidth={2} dot={rows.length <= 24 ? { r: 3 } : false} activeDot={{ r: 5 }} />
-          </LineChart>
+            <Area
+              dataKey="total_end_balance"
+              name="Total balance"
+              stroke={color}
+              strokeWidth={2}
+              fill={hudFill(uid, 'area', 'total')}
+              filter={hudGlow(uid, 'total')}
+              dot={rows.length <= 24 ? { r: 3, fill: color, stroke: 'var(--surface)', strokeWidth: 1.5 } : false}
+              activeDot={hudActiveDot(color)}
+              {...chartMotion(0)}
+            />
+          </AreaChart>
         </ResponsiveContainer>
-      </div>
+      </ChartFrame>
       <details className="mt-2 text-sm">
         <summary className="cursor-pointer text-xs font-medium text-muted">Show as a table</summary>
         <div className="mt-2 -mx-4 max-h-80 overflow-auto sm:-mx-5">
@@ -434,6 +475,7 @@ function ScheduleSection({
   state: ViewState<VDebtPlanSchedule>;
   colorFor: (id: string, fallback: number) => string;
 }) {
+  const uid = svgId(useId());
   if (state.error) return <ErrorState label="the plan schedule" message={state.error} onRetry={state.reload} />;
   if (state.loading || state.data === null) return <LoadingState label="the plan schedule" />;
   if (state.data.length === 0) return <EmptyState>The active plan has no schedule rows.</EmptyState>;
@@ -461,29 +503,43 @@ function ScheduleSection({
 
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {cards.map((c) => (
-        <figure key={c.id} className="min-w-0 rounded-xl border border-line p-3">
-          <figcaption className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-            <span className="flex min-w-0 items-center gap-1.5 font-medium text-ink">
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: c.color }} aria-hidden="true" />
-              <span className="truncate">{c.name}</span>
+      {cards.map((c, i) => (
+        <ChartFrame
+          key={c.id}
+          className="h-36"
+          label={`Projected end balance for ${c.name} by month`}
+          caption={
+            <span className="flex items-baseline justify-between gap-2 text-sm">
+              <SeriesName name={c.name} color={c.color} />
+              <span className="shrink-0 text-xs text-muted">{c.payoff ? `Paid off ${formatMonth(c.payoff, 'short')}` : 'Not paid off in plan'}</span>
             </span>
-            <span className="shrink-0 text-xs text-muted">{c.payoff ? `Paid off ${formatMonth(c.payoff, 'short')}` : 'Not paid off in plan'}</span>
-          </figcaption>
-          <div className="h-36 w-full" role="img" aria-label={`Projected end balance for ${c.name} by month`}>
+          }
+        >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data} margin={{ top: 6, right: 6, bottom: 0, left: 0 }}>
-                <CartesianGrid stroke={gridStroke} vertical={false} />
+                <defs>{hudDefs(uid, [{ key: c.id, color: c.color, kind: 'area' }])}</defs>
+                <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} vertical={false} />
                 <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={40} />
                 <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={48} domain={[0, 'auto']} tickCount={3} />
                 <Tooltip
+                  cursor={lineCursor}
                   content={(p) => <MoneyTooltip active={p.active} payload={p.payload} label={p.label} formatLabel={(l) => formatMonth(String(l))} />}
                 />
-                <Area dataKey={c.id} name={c.name} stroke={c.color} fill={c.color} fillOpacity={0.15} strokeWidth={2} dot={false} activeDot={{ r: 4 }} connectNulls isAnimationActive={false} />
+                <Area
+                  dataKey={c.id}
+                  name={c.name}
+                  stroke={c.color}
+                  fill={hudFill(uid, 'area', c.id)}
+                  filter={hudGlow(uid, c.id)}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={hudActiveDot(c.color)}
+                  connectNulls
+                  {...chartMotion(Math.min(i, 6) * 70)}
+                />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
-        </figure>
+        </ChartFrame>
       ))}
     </div>
   );

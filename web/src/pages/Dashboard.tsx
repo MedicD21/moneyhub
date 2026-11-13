@@ -4,7 +4,7 @@ import { useEntry } from '../components/EntryContext';
 import { RainyDayHint } from '../components/RainyDayHint';
 import type { VAccountBalance, VAppInfo, VDashboard, VEnvelope, VPayPeriodForecast, VUpcomingBill } from '../types/db';
 import { addDays, formatCount, formatCurrency, formatDate, formatDateRange, formatRelativeDays, humanize } from '../lib/format';
-import { Badge, Banner, Card, Money, PageHeader, Row, Stat } from '../components/ui';
+import { Badge, Banner, Card, Meter, Money, PageHeader, Row, Stat } from '../components/ui';
 import { cx } from '../lib/cx';
 import { ErrorState, QueryState } from '../components/QueryState';
 import { billStatusBadge } from '../components/billStatus';
@@ -254,9 +254,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
                 tone={d.overspent ? 'danger' : 'default'}
               />
               {spentRatio !== null ? (
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-surface-2" aria-hidden="true">
-                  <div className="h-full rounded-full bg-accent" style={{ width: `${spentRatio * 100}%` }} />
-                </div>
+                <Meter percent={spentRatio * 100} thickness="md" className="mt-3" />
               ) : null}
               <div className="mt-3 divide-y divide-line border-t border-line">
                 <Row label="Safe to spend">

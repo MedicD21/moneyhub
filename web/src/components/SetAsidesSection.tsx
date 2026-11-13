@@ -6,7 +6,7 @@ import { formatCurrency, todayLocal } from '../lib/format';
 import { amountToInputText, centsToDollars, parseCentsAllowZero, sanitizeAmountInput } from '../lib/money';
 import { createSetAside, updateSetAside, type SetAsideInput } from '../lib/writes';
 import { cx } from '../lib/cx';
-import { Badge, Banner, Button, Field, Money, inputClass } from './ui';
+import { Badge, Banner, Button, Field, Meter, Money, inputClass } from './ui';
 import { Icon } from './Icon';
 import { QueryState } from './QueryState';
 
@@ -124,9 +124,7 @@ function SetAsideItem({ r, onEdit, onChanged }: { r: VSetAside; onEdit: () => vo
         </span>
       </div>
       {pct !== null && r.is_active ? (
-        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line" role="img" aria-label={`${Math.round(pct * 100)}% of cap`}>
-          <div className="h-full rounded-full bg-accent" style={{ width: `${pct * 100}%` }} />
-        </div>
+        <Meter percent={pct * 100} label={`${Math.round(pct * 100)}% of cap`} className="mt-2" />
       ) : null}
       <p className="mt-1.5 text-xs text-muted">
         {formatCurrency(r.per_paycheck)} per paycheck

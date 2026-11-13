@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-13T03:03:15.623710+00:00",
+  "title": "Design System: Money Hub",
+  "extensions": {
+    "colorMeta": {
+      "deep-pine": {
+        "role": "primary",
+        "displayName": "Deep Pine",
+        "tonalRamp": [
+          "oklch(15% 0.044 165)",
+          "oklch(25% 0.056 165)",
+          "oklch(35% 0.067 165)",
+          "oklch(45% 0.079 165)",
+          "oklch(55% 0.09 165)",
+          "oklch(70% 0.073 165)",
+          "oklch(85% 0.056 165)",
+          "oklch(95% 0.044 165)"
+        ]
+      },
+      "deep-pine-dark": {
+        "role": "primary",
+        "displayName": "Deep Pine (Dusk)",
+        "tonalRamp": [
+          "oklch(15% 0.044 165)",
+          "oklch(25% 0.056 165)",
+          "oklch(35% 0.067 165)",
+          "oklch(45% 0.079 165)",
+          "oklch(55% 0.09 165)",
+          "oklch(70% 0.073 165)",
+          "oklch(85% 0.056 165)",
+          "oklch(95% 0.044 165)"
+        ]
+      },
+      "deep-pine-soft": {
+        "role": "primary",
+        "displayName": "Pine Wash",
+        "tonalRamp": [
+          "oklch(15% 0.015 165)",
+          "oklch(25% 0.019 165)",
+          "oklch(35% 0.022 165)",
+          "oklch(45% 0.026 165)",
+          "oklch(55% 0.03 165)",
+          "oklch(70% 0.024 165)",
+          "oklch(85% 0.019 165)",
+          "oklch(95% 0.015 165)"
+        ]
+      },
+      "ledger-paper": {
+        "role": "neutral",
+        "displayName": "Ledger Paper",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "ledger-sheet": {
+        "role": "neutral",
+        "displayName": "Ledger Sheet",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "ledger-tint": {
+        "role": "neutral",
+        "displayName": "Ledger Tint",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "ledger-rule": {
+        "role": "neutral",
+        "displayName": "Ledger Rule",
+        "tonalRamp": [
+          "oklch(15% 0.004 100)",
+          "oklch(25% 0.005 100)",
+          "oklch(35% 0.006 100)",
+          "oklch(45% 0.007 100)",
+          "oklch(55% 0.008 100)",
+          "oklch(70% 0.006 100)",
+          "oklch(85% 0.005 100)",
+          "oklch(95% 0.004 100)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "ink-muted": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "tonalRamp": [
+          "oklch(15% 0.004 100)",
+          "oklch(25% 0.005 100)",
+          "oklch(35% 0.006 100)",
+          "oklch(45% 0.007 100)",
+          "oklch(55% 0.008 100)",
+          "oklch(70% 0.006 100)",
+          "oklch(85% 0.005 100)",
+          "oklch(95% 0.004 100)"
+        ]
+      },
+      "dusk-paper": {
+        "role": "neutral",
+        "displayName": "Dusk Paper",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "dusk-sheet": {
+        "role": "neutral",
+        "displayName": "Dusk Sheet",
+        "tonalRamp": [
+          "oklch(15% 0.002 100)",
+          "oklch(25% 0.002 100)",
+          "oklch(35% 0.003 100)",
+          "oklch(45% 0.003 100)",
+          "oklch(55% 0.004 100)",
+          "oklch(70% 0.003 100)",
+          "oklch(85% 0.002 100)",
+          "oklch(95% 0.002 100)"
+        ]
+      },
+      "money-in": {
+        "role": "status",
+        "displayName": "Money In",
+        "tonalRamp": [
+          "oklch(15% 0.074 142)",
+          "oklch(25% 0.093 142)",
+          "oklch(35% 0.112 142)",
+          "oklch(45% 0.131 142)",
+          "oklch(55% 0.15 142)",
+          "oklch(70% 0.121 142)",
+          "oklch(85% 0.093 142)",
+          "oklch(95% 0.074 142)"
+        ]
+      },
+      "caution": {
+        "role": "status",
+        "displayName": "Caution",
+        "tonalRamp": [
+          "oklch(15% 0.059 70)",
+          "oklch(25% 0.074 70)",
+          "oklch(35% 0.089 70)",
+          "oklch(45% 0.105 70)",
+          "oklch(55% 0.12 70)",
+          "oklch(70% 0.097 70)",
+          "oklch(85% 0.074 70)",
+          "oklch(95% 0.059 70)"
+        ]
+      },
+      "overdue": {
+        "role": "status",
+        "displayName": "Overdue",
+        "tonalRamp": [
+          "oklch(15% 0.083 27)",
+          "oklch(25% 0.105 27)",
+          "oklch(35% 0.127 27)",
+          "oklch(45% 0.148 27)",
+          "oklch(55% 0.17 27)",
+          "oklch(70% 0.138 27)",
+          "oklch(85% 0.105 27)",
+          "oklch(95% 0.083 27)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Amount being typed in the add/edit sheet."
+      },
+      "stat": {
+        "displayName": "Stat",
+        "purpose": "Headline money figures."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Card and sheet headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Rows, descriptions, buttons."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Stat and field labels, subtitles."
+      },
+      "micro": {
+        "displayName": "Micro",
+        "purpose": "Badges and tab labels only."
+      }
+    },
+    "shadows": [
+      {
+        "name": "sheet-rest",
+        "value": "0 1px 2px rgba(0,0,0,0.04)",
+        "purpose": "Cards."
+      },
+      {
+        "name": "float",
+        "value": "0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1)",
+        "purpose": "The + add button."
+      },
+      {
+        "name": "overlay",
+        "value": "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+        "purpose": "Add/edit sheet over a 50% black scrim."
+      }
+    ],
+    "motion": [
+      {
+        "name": "color-transition",
+        "value": "150ms cubic-bezier(0.4, 0, 0.2, 1)",
+        "purpose": "Button and nav hover color changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "0.01ms",
+        "purpose": "All animation and transition durations under prefers-reduced-motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one action that matters on a view.",
+      "html": "<button class=\"ds-btn-primary\">Save</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 12px;border-radius:8px;font:500 14px/1.43 system-ui,-apple-system,sans-serif;cursor:pointer;transition:background-color .15s,color .15s,opacity .15s;background:var(--accent);color:var(--accent-ink);border:none;}.ds-btn-primary:hover{opacity:.9}.ds-btn-primary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-btn-primary:disabled{opacity:.5;cursor:not-allowed}"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Default button for everything else.",
+      "html": "<button class=\"ds-btn-secondary\">Edit</button>",
+      "css": ".ds-btn-secondary{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 12px;border-radius:8px;font:500 14px/1.43 system-ui,-apple-system,sans-serif;cursor:pointer;transition:background-color .15s,color .15s,opacity .15s;background:var(--surface);color:var(--text);border:1px solid var(--border);}.ds-btn-secondary:hover{background:var(--surface-2)}.ds-btn-secondary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-btn-secondary:disabled{opacity:.5;cursor:not-allowed}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Low-emphasis actions like Cancel and Sign out.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 12px;border-radius:8px;font:500 14px/1.43 system-ui,-apple-system,sans-serif;cursor:pointer;transition:background-color .15s,color .15s,opacity .15s;background:transparent;color:var(--muted);border:none;}.ds-btn-ghost:hover{background:var(--surface-2);color:var(--text)}.ds-btn-ghost:focus-visible{outline:2px solid var(--accent);outline-offset:2px}.ds-btn-ghost:disabled{opacity:.5;cursor:not-allowed}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Labeled field; 16px text on phones to stop iOS zoom.",
+      "html": "<label class=\"ds-field\">Note<input class=\"ds-input\" placeholder=\"Optional\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:4px;font:500 12px/1.33 system-ui,sans-serif;color:var(--muted)}.ds-input{min-height:44px;padding:0 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font:400 16px system-ui,sans-serif}.ds-input::placeholder{color:var(--subtle)}.ds-input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}"
+    },
+    {
+      "name": "Card with Stat and Rows",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The basic container: title, a headline figure, then label/value rows.",
+      "html": "<section class=\"ds-card\"><h2 class=\"ds-card-title\">This pay period</h2><div class=\"ds-stat-label\">Safe to spend</div><div class=\"ds-stat\">$0.00</div><div class=\"ds-row\"><span>Bills due</span><span>$0.00</span></div><div class=\"ds-row\"><span>Set-asides</span><span>$0.00</span></div></section>",
+      "css": ".ds-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 1px 2px rgba(0,0,0,.04);font-family:system-ui,sans-serif;color:var(--text);max-width:340px}.ds-card-title{margin:0 0 12px;font:600 14px/1.43 system-ui,sans-serif}.ds-stat-label{font:500 12px/1.33 system-ui,sans-serif;color:var(--muted)}.ds-stat{margin:4px 0 8px;font:600 30px/1.2 system-ui,sans-serif;letter-spacing:-.025em;font-variant-numeric:tabular-nums}.ds-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;font-size:14px;color:var(--muted)}.ds-row span:last-child{color:var(--text);font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Status Badges",
+      "kind": "chip",
+      "refersTo": "badge-ok",
+      "description": "Pill badges for bill and transaction status.",
+      "html": "<span class=\"ds-badge ds-ok\">Paid</span> <span class=\"ds-badge ds-warn\">Due soon</span> <span class=\"ds-badge ds-danger\">Overdue</span> <span class=\"ds-badge ds-muted\">Pending</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;border:1px solid;border-radius:9999px;padding:2px 8px;font:500 11px/16px system-ui,sans-serif;white-space:nowrap}.ds-ok{background:var(--ok-bg);color:var(--pos);border-color:var(--ok-line)}.ds-warn{background:var(--warn-bg);color:var(--warn);border-color:var(--warn-line)}.ds-danger{background:var(--danger-bg);color:var(--danger);border-color:var(--danger-line)}.ds-muted{background:var(--surface-2);color:var(--muted);border-color:var(--border)}"
+    },
+    {
+      "name": "Mobile Tab Bar",
+      "kind": "nav",
+      "refersTo": "nav-item-active",
+      "description": "Six-tab phone navigation; active tab in Deep Pine.",
+      "html": "<nav class=\"ds-tabs\"><a class=\"ds-tab ds-active\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 11l9-8 9 8v10H3z\"/></svg><span>Home</span></a><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01\"/></svg><span>Activity</span></a><a class=\"ds-tab\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"17\" rx=\"2\"/><path d=\"M3 9h18M8 2v4M16 2v4\"/></svg><span>Bills</span></a></nav>",
+      "css": ".ds-tabs{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--border);background:var(--surface);max-width:360px}.ds-tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:56px;color:var(--muted);text-decoration:none;font:500 10.5px system-ui,sans-serif}.ds-tab.ds-active{color:var(--accent)}.ds-tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}"
+    },
+    {
+      "name": "Add Button",
+      "kind": "custom",
+      "refersTo": "fab-add",
+      "description": "Floating + that opens the add-transaction sheet.",
+      "html": "<button class=\"ds-fab\" aria-label=\"Add transaction\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button>",
+      "css": ".ds-fab{display:grid;place-items:center;width:56px;height:56px;border-radius:9999px;border:none;background:var(--accent);color:var(--accent-ink);box-shadow:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -4px rgba(0,0,0,.1);cursor:pointer}.ds-fab:hover{opacity:.9}.ds-fab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Ledger at Dusk",
+    "overview": "Money Hub is a bookkeeper's ledger read under a lamp. Warm paper in daylight, warm near-black at night, and figures that sit still on the page. The interface does no persuading: it lays out what the database computed, in a fixed order, so the eye goes to the number and then to what's due next.\n\nComponents are crisp and utilitarian. Hairline rules separate things, one deep pine accent marks the single thing you can act on, and status color (in, caution, overdue) is the only other color allowed to speak. Density is moderate: phone-first stacks of cards, small labels over large tabular figures, and 40px minimum touch targets. Dusk (dark mode) is a peer of daylight, not an inversion: every token has a tuned dark value.",
+    "keyCharacteristics": [
+      "Warm neutral paper and ink in both themes, never pure white-on-black or blue-gray.",
+      "One accent, Deep Pine, for primary actions, the active nav item and focus rings.",
+      "Tabular figures everywhere money appears.",
+      "Flat surfaces; a near-invisible shadow on cards, real shadow only on things that float.",
+      "System font stack; hierarchy comes from size and weight, not typeface."
+    ],
+    "rules": [
+      {
+        "name": "The Neutral Spend Rule",
+        "body": "Money out is never red. Red means overdue or an error, not \"you spent money\". Only money in gets color.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Pine Rule",
+        "body": "Deep Pine marks what you can act on or where you are. It is never a background for content or a decorative stripe.",
+        "section": "colors"
+      },
+      {
+        "name": "The Dusk Parity Rule",
+        "body": "No color ships without its dark value. Add new colors as CSS custom properties with both steps, never as raw hex in a component.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Rule",
+        "body": "Every money value renders with tabular figures, so columns of amounts align digit for digit.",
+        "section": "typography"
+      },
+      {
+        "name": "The 16px Input Rule",
+        "body": "Inputs are 1rem on phones (0.875rem from `sm` up) so iOS Safari never zooms on focus.",
+        "section": "typography"
+      },
+      {
+        "name": "The Only-Floaters-Cast Rule",
+        "body": "Only elements that float over content (the + button, the sheet) get a visible shadow. Nothing in the page flow does.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** take every color from a CSS custom property with light and dark values (`web/src/index.css`).",
+      "**Do** render money through the shared `Money` / `Stat` / `Row` components so tabular figures and sign color stay consistent.",
+      "**Do** keep touch targets at least 40px (44px for phone inputs, 56px for tabs and the + button).",
+      "**Do** use the status tones only for status: ok, caution, overdue.",
+      "**Do** reuse `web/src/components/ui.tsx` primitives before adding new ones."
+    ],
+    "donts": [
+      "**Don't** color money out red or orange; red is for overdue and errors.",
+      "**Don't** add a second accent color or use Deep Pine as a decorative fill.",
+      "**Don't** add shadows to in-flow elements beyond the card's sheet-rest shadow.",
+      "**Don't** introduce a webfont or a separate numeric font; the system stack with tabular figures is the type system.",
+      "**Don't** use chart series colors outside charts."
+    ]
+  }
+}

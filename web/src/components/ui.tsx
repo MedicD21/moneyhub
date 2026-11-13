@@ -265,6 +265,42 @@ export function Field({ label, children, className }: { label: string; children:
 export const inputClass =
   'min-h-11 w-full min-w-0 rounded-lg border border-line bg-surface px-3 text-base text-ink sm:min-h-10 sm:text-sm focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent';
 
+const METER_FILL: Record<'accent' | 'pos' | 'warn' | 'danger', string> = {
+  accent: 'var(--accent)',
+  pos: 'var(--pos)',
+  warn: 'var(--warn)',
+  danger: 'var(--danger)',
+};
+
+/**
+ * A lit HUD meter (styles in index.css). `percent` is display scaling of a value the view already
+ * computed (0–100, clamped here); the meter does no math of its own.
+ */
+export function Meter({
+  percent,
+  tone = 'accent',
+  thickness = 'sm',
+  label,
+  className,
+}: {
+  percent: number;
+  tone?: 'accent' | 'pos' | 'warn' | 'danger';
+  thickness?: 'sm' | 'md';
+  /** accessible name; omit when the figure is already shown as text next to the meter */
+  label?: string;
+  className?: string;
+}) {
+  const width = `${Math.min(100, Math.max(0, percent))}%`;
+  return (
+    <div
+      className={cx('hud-track', thickness === 'md' ? 'h-2' : 'h-1.5', className)}
+      {...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': true })}
+    >
+      <div className="hud-fill" style={{ width, ['--fill' as string]: METER_FILL[tone] }} />
+    </div>
+  );
+}
+
 /** Definition-list row: label left, value right. */
 export function Row({ label, children, strong = false }: { label: ReactNode; children: ReactNode; strong?: boolean }) {
   return (

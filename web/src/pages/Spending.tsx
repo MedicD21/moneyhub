@@ -7,12 +7,15 @@ import { Card, Field, Money, PageHeader, Stat } from '../components/ui';
 import { cx } from '../lib/cx';
 import { MonthSelect } from '../components/MonthControls';
 import { QueryState } from '../components/QueryState';
-import { ChartLegend, MoneyTooltip } from '../components/charts';
-import { axisLine, axisTick, gridStroke, seriesColor } from '../components/chartTheme';
+import { useId } from 'react';
+import { ChartFrame, ChartLegend, MoneyTooltip } from '../components/charts';
+import { hudActiveDot, hudDefs, hudFill, hudGlow } from '../components/hudDefs';
+import { axisLine, axisTick, barCursor, chartMotion, gridDash, gridStroke, seriesColor, svgId } from '../components/chartTheme';
 
 const CHART_MONTHS = 12;
 
 export default function Spending() {
+  const uid = svgId(useId());
   const { params, set } = useQueryParams();
   const cashFlow = useView<VCashFlow>('v_cash_flow', (sb) => sb.from('v_cash_flow').select('*').order('month', { ascending: false }));
 
@@ -60,23 +63,40 @@ export default function Spending() {
                     { label: 'Net', color: 'var(--text)', kind: 'line' },
                   ]}
                 />
-                <div className="h-64 w-full sm:h-72" role="img" aria-label="Bar chart of monthly income and spending with a net line">
+                <ChartFrame className="h-64 sm:h-72" label="Bar chart of monthly income and spending with a net line">
                   <ResponsiveContainer width="100%" height="100%">
                     <ComposedChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barGap={2}>
-                      <CartesianGrid stroke={gridStroke} vertical={false} />
+                      <defs>
+                        {hudDefs(uid, [
+                          { key: 'income', color: 'var(--income)', kind: 'column' },
+                          { key: 'spending', color: 'var(--spending)', kind: 'column' },
+                          { key: 'net', color: 'var(--text)', kind: 'line' },
+                        ])}
+                      </defs>
+                      <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} vertical={false} />
                       <XAxis dataKey="month" tickFormatter={(m: string) => formatMonth(m, 'short')} tick={axisTick} axisLine={axisLine} tickLine={false} minTickGap={8} />
                       <YAxis tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={false} tickLine={false} width={56} />
                       <ReferenceLine y={0} stroke="var(--chart-axis)" />
                       <Tooltip
-                        cursor={{ fill: 'var(--surface-2)' }}
+                        cursor={barCursor}
                         content={(p) => <MoneyTooltip active={p.active} payload={p.payload} label={p.label} formatLabel={(l) => formatMonth(String(l))} />}
                       />
-                      <Bar dataKey="income" name="Income" fill="var(--income)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                      <Bar dataKey="spending" name="Spending" fill="var(--spending)" radius={[4, 4, 0, 0]} maxBarSize={28} />
-                      <Line dataKey="net" name="Net" stroke="var(--text)" strokeWidth={2} dot={{ r: 4, strokeWidth: 2, fill: 'var(--surface)' }} activeDot={{ r: 5 }} type="linear" />
+                      <Bar dataKey="income" name="Income" stroke="var(--income)" strokeWidth={0} fill={hudFill(uid, 'column', 'income')} radius={[5, 5, 1, 1]} maxBarSize={28} {...chartMotion(0)} />
+                      <Bar dataKey="spending" name="Spending" stroke="var(--spending)" strokeWidth={0} fill={hudFill(uid, 'column', 'spending')} radius={[5, 5, 1, 1]} maxBarSize={28} {...chartMotion(120)} />
+                      <Line
+                        dataKey="net"
+                        name="Net"
+                        stroke="var(--text)"
+                        strokeWidth={2}
+                        filter={hudGlow(uid, 'net')}
+                        dot={{ r: 3.5, strokeWidth: 2, fill: 'var(--surface)' }}
+                        activeDot={hudActiveDot('var(--text)')}
+                        type="monotone"
+                        {...chartMotion(300)}
+                      />
                     </ComposedChart>
                   </ResponsiveContainer>
-                </div>
+                </ChartFrame>
               </>
             );
           }}
@@ -116,15 +136,17 @@ export default function Spending() {
 }
 
 function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
+  const uid = svgId(useId());
   const chartRows = rows.filter((r) => r.total_out > 0);
   const label = (r: VMonthSpending) => (r.category_parent ? `${r.category_parent} › ${r.category_name}` : r.category_name);
   return (
     <>
       {chartRows.length > 0 ? (
-        <div className="w-full" style={{ height: chartRows.length * 34 + 32 }} role="img" aria-label="Horizontal bar chart of money out per category">
+        <ChartFrame style={{ height: chartRows.length * 34 + 32 }} label="Horizontal bar chart of money out per category">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={chartRows} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
-              <CartesianGrid stroke={gridStroke} horizontal={false} />
+              <defs>{hudDefs(uid, [{ key: 'out', color: seriesColor(0), kind: 'bar' }])}</defs>
+              <CartesianGrid stroke={gridStroke} strokeDasharray={gridDash} horizontal={false} />
               <XAxis type="number" tickFormatter={formatCurrencyCompact} tick={axisTick} axisLine={axisLine} tickLine={false} />
               <YAxis
                 type="category"
@@ -136,7 +158,7 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
                 tickFormatter={(v: string) => (v.length > 16 ? `${v.slice(0, 15)}…` : v)}
               />
               <Tooltip
-                cursor={{ fill: 'var(--surface-2)' }}
+                cursor={barCursor}
                 content={(p) => (
                   <MoneyTooltip
                     active={p.active}
@@ -146,10 +168,10 @@ function CategoryBreakdown({ rows }: { rows: VMonthSpending[] }) {
                   />
                 )}
               />
-              <Bar dataKey="total_out" name="Money out" fill={seriesColor(0)} radius={[0, 4, 4, 0]} maxBarSize={22} />
+              <Bar dataKey="total_out" name="Money out" stroke={seriesColor(0)} strokeWidth={0} fill={hudFill(uid, 'bar', 'out')} radius={[1, 5, 5, 1]} maxBarSize={22} {...chartMotion(0)} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </ChartFrame>
       ) : (
         <p className="text-sm text-muted">No money out this month; see the table for money in.</p>
       )}

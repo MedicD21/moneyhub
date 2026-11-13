@@ -40,6 +40,17 @@
   --series-8: #e34948;
   --income: #1baf7a;
   --spending: #eb6834;
+
+  /* HUD instrumentation (charts and meters): ceramic plate + lit seams. */
+  --plate-hi: #ffffff;
+  --plate-lo: #f3f2ee;
+  --plate-bevel: rgba(255, 255, 255, 0.9);
+  --plate-shade: rgba(22, 22, 21, 0.06);
+  --plate-cast: 0 1px 1px rgba(22, 22, 21, 0.04), 0 6px 16px -8px rgba(22, 22, 21, 0.16);
+  --seam: color-mix(in oklab, var(--accent) 55%, transparent);
+  --sweep: color-mix(in oklab, var(--accent) 10%, transparent);
+  --glow-mix: 38%;
+  --track-shade: inset 0 1px 2px rgba(22, 22, 21, 0.12);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -79,6 +90,16 @@
     --series-8: #e66767;
     --income: #199e70;
     --spending: #d95926;
+
+    --plate-hi: #20201e;
+    --plate-lo: #171716;
+    --plate-bevel: rgba(255, 255, 255, 0.06);
+    --plate-shade: rgba(0, 0, 0, 0.35);
+    --plate-cast: 0 1px 1px rgba(0, 0, 0, 0.3), 0 10px 24px -10px rgba(0, 0, 0, 0.6);
+    --seam: color-mix(in oklab, var(--accent) 70%, transparent);
+    --sweep: color-mix(in oklab, var(--accent) 14%, transparent);
+    --glow-mix: 60%;
+    --track-shade: inset 0 1px 2px rgba(0, 0, 0, 0.5);
   }
 }
 
@@ -130,6 +151,137 @@ body {
 .recharts-wrapper svg:focus,
 .recharts-surface:focus {
   outline: none;
+}
+
+/*
+ * HUD instrumentation. Charts sit on a "ceramic plate": a soft top-lit gradient with a bevel
+ * highlight, a lit pine seam along the top edge and corner brackets. One sweep of light crosses
+ * the plate as the data draws in. Colors all come from the tokens above, so both themes hold.
+ */
+.hud-plate {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--plate-hi), var(--plate-lo));
+  box-shadow:
+    inset 0 1px 0 var(--plate-bevel),
+    inset 0 -1px 0 var(--plate-shade),
+    var(--plate-cast);
+}
+.hud-plate::before {
+  /* lit seam along the top edge, brightest in the middle */
+  content: '';
+  position: absolute;
+  inset: 0 12% auto;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--seam), transparent);
+  pointer-events: none;
+}
+.hud-plate::after {
+  /* one pass of light on arrival */
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(100deg, transparent 0 35%, var(--sweep) 50%, transparent 65% 100%);
+  transform: translateX(-100%);
+  animation: hud-sweep 1.3s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  pointer-events: none;
+}
+.hud-bracket {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--seam);
+  border-style: solid;
+  border-width: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.hud-bracket[data-c='tl'] { top: 6px; left: 6px; border-top-width: 1.5px; border-left-width: 1.5px; border-top-left-radius: 4px; }
+.hud-bracket[data-c='tr'] { top: 6px; right: 6px; border-top-width: 1.5px; border-right-width: 1.5px; border-top-right-radius: 4px; }
+.hud-bracket[data-c='bl'] { bottom: 6px; left: 6px; border-bottom-width: 1.5px; border-left-width: 1.5px; border-bottom-left-radius: 4px; }
+.hud-bracket[data-c='br'] { bottom: 6px; right: 6px; border-bottom-width: 1.5px; border-right-width: 1.5px; border-bottom-right-radius: 4px; }
+
+/* Tabular axis numerals so ticks align like an instrument scale. */
+.hud-plate .recharts-cartesian-axis-tick-value {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* Hover ring on the active point: a slow pulse, transform-only. */
+.hud-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: hud-pulse 1.6s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Readout tooltip. */
+.hud-readout {
+  position: relative;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--plate-hi), var(--plate-lo));
+  box-shadow:
+    inset 0 1px 0 var(--plate-bevel),
+    0 8px 24px -8px rgba(0, 0, 0, 0.35);
+}
+.hud-readout::before {
+  content: '';
+  position: absolute;
+  inset: -1px 10px auto;
+  height: 1.5px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+/* Meters: inset track, top-lit fill that grows in, one glint. */
+.hud-track {
+  position: relative;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: var(--surface-2);
+  box-shadow: var(--track-shade);
+}
+.hud-fill {
+  position: relative;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--fill, var(--accent));
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.12));
+  box-shadow: 0 1px 4px -1px color-mix(in oklab, var(--fill, var(--accent)) var(--glow-mix), transparent);
+  transform-origin: left center;
+  animation: hud-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
+}
+.hud-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.55) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: hud-glint 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.7s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* an infinite loop at 0.01ms would strobe; hide the ring instead */
+  .hud-pulse { animation: none; opacity: 0; }
+}
+
+@keyframes hud-sweep {
+  to { transform: translateX(100%); }
+}
+@keyframes hud-grow {
+  from { transform: scaleX(0); }
+}
+@keyframes hud-glint {
+  to { transform: translateX(120%); }
+}
+@keyframes hud-pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  100% { transform: scale(2.4); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
