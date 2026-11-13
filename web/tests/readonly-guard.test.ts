@@ -1,15 +1,29 @@
 /**
- * Static guard: the web app is read-only (SPEC hard rule 1). Fails CI if any
- * source file under src/ calls a PostgREST write method or rpc.
+ * Static guard for the browser's write surface (SPEC hard rule 1, narrowed).
+ *
+ * The web app never writes tables. Its only write path is a fixed list of owner-checked
+ * database functions (RPCs), and they may be called from exactly one file: src/lib/writes.ts.
+ * Reconciliation functions are deliberately absent: only Claude can reconcile.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
-const FORBIDDEN = /\.\s*(insert|update|upsert|delete|rpc)\s*\(/g;
+const WRITES_FILE = ['lib', 'writes.ts'].join(sep);
+const TABLE_WRITE = /\.\s*(insert|update|upsert|delete)\s*\(/g;
+const RPC_CALL = /\.\s*rpc\s*\(/g;
+const RPC_NAME = /\.\s*rpc\s*\(\s*['"]([a-z_]+)['"]/g;
 const SCANNED_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+
+const ALLOWED_RPCS = [
+  'add_manual_transaction',
+  'update_manual_transaction',
+  'delete_manual_transaction',
+  'set_transaction_cleared',
+  'move_envelope_money',
+];
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -18,36 +32,60 @@ function walk(dir: string): string[] {
   });
 }
 
-function findViolations(source: string): string[] {
-  const hits: string[] = [];
+function hits(source: string, pattern: RegExp): string[] {
+  const out: string[] = [];
   source.split('\n').forEach((line, i) => {
-    for (const m of line.matchAll(FORBIDDEN)) hits.push(`${i + 1}: ${m[0]} -> ${line.trim()}`);
+    for (const m of line.matchAll(pattern)) out.push(`${i + 1}: ${m[0]} -> ${line.trim()}`);
   });
-  return hits;
+  return out;
 }
 
-describe('read-only guard', () => {
+describe('write-surface guard', () => {
   it('detects forbidden calls (self-check)', () => {
-    const samples = [
+    for (const s of [
       "supabase.from('t').insert({})",
       "supabase.from('t').update({ a: 1 })",
       "supabase.from('t').upsert([])",
       "supabase.from('t').delete()",
-      "supabase.rpc('fn')",
       "supabase\n  .from('t')\n  . delete ()",
-    ];
-    for (const s of samples) expect(findViolations(s).length, s).toBeGreaterThan(0);
-    expect(findViolations("supabase.from('v_dashboard').select('*').eq('a', 1)")).toEqual([]);
+    ]) {
+      expect(hits(s, TABLE_WRITE).length, s).toBeGreaterThan(0);
+    }
+    expect(hits("supabase.rpc('fn')", RPC_CALL).length).toBeGreaterThan(0);
+    expect(hits("supabase.from('v_dashboard').select('*').eq('a', 1)", TABLE_WRITE)).toEqual([]);
   });
 
-  it('scans a non-empty src/ tree', () => {
-    expect(walk(SRC).length).toBeGreaterThan(5);
+  it('scans a non-empty src/ tree that includes writes.ts', () => {
+    const files = walk(SRC).map((f) => relative(SRC, f));
+    expect(files.length).toBeGreaterThan(5);
+    expect(files).toContain(WRITES_FILE);
   });
 
-  it('finds no insert/update/upsert/delete/rpc calls in src/', () => {
+  it('never writes tables directly anywhere in src/', () => {
     const violations = walk(SRC).flatMap((file) =>
-      findViolations(readFileSync(file, 'utf8')).map((v) => `${relative(SRC, file)}:${v}`),
+      hits(readFileSync(file, 'utf8'), TABLE_WRITE).map((v) => `${relative(SRC, file)}:${v}`),
     );
-    expect(violations, `Read-only rule violated:\n${violations.join('\n')}`).toEqual([]);
+    expect(violations, `Direct table writes found:\n${violations.join('\n')}`).toEqual([]);
+  });
+
+  it('calls rpc only from src/lib/writes.ts', () => {
+    const violations = walk(SRC)
+      .filter((file) => relative(SRC, file) !== WRITES_FILE)
+      .flatMap((file) => hits(readFileSync(file, 'utf8'), RPC_CALL).map((v) => `${relative(SRC, file)}:${v}`));
+    expect(violations, `rpc() outside writes.ts:\n${violations.join('\n')}`).toEqual([]);
+  });
+
+  it('writes.ts calls only whitelisted functions, by literal name', () => {
+    const source = readFileSync(join(SRC, 'lib', 'writes.ts'), 'utf8');
+    const total = hits(source, RPC_CALL).length;
+    const named = [...source.matchAll(RPC_NAME)].map((m) => m[1]);
+    expect(named.length, 'every rpc call must use a literal function name').toBe(total);
+    for (const name of named) expect(ALLOWED_RPCS, `${name} is not whitelisted`).toContain(name);
+    expect(new Set(named)).toEqual(new Set(ALLOWED_RPCS));
+  });
+
+  it('never exposes reconciliation to the browser', () => {
+    const violations = walk(SRC).filter((file) => /reconcile_transactions|unreconcile_transactions/.test(readFileSync(file, 'utf8')));
+    expect(violations.map((f) => relative(SRC, f))).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useView } from '../hooks/useView';
 import { useQueryParams } from '../hooks/useParams';
 import type { AccountRow, CategoryRow, VTag, VTransaction, VTransactionMonth } from '../types/db';
@@ -7,6 +8,8 @@ import { cx } from '../lib/cx';
 import { MonthSelect } from '../components/MonthControls';
 import { QueryState } from '../components/QueryState';
 import { Icon } from '../components/Icon';
+import { useEntry } from '../components/EntryContext';
+import { setTransactionCleared } from '../lib/writes';
 
 const PAGE_SIZE = 50;
 
@@ -18,6 +21,8 @@ export default function Transactions() {
   const account = params.get('account') ?? '';
   const tag = params.get('tag') ?? '';
   const review = params.get('review') === '1';
+  const unreconciled = params.get('unreconciled') === '1';
+  const { version, openAdd } = useEntry();
   const page = Math.max(1, Number.parseInt(params.get('page') ?? '1', 10) || 1);
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -29,7 +34,7 @@ export default function Transactions() {
   const categories = useView<CategoryRow>('categories', (sb) => sb.from('categories').select('*').order('name'));
   const accounts = useView<AccountRow>('accounts', (sb) => sb.from('accounts').select('*').order('name'));
 
-  const key = JSON.stringify({ month, category, account, tag, review, page });
+  const key = JSON.stringify({ month, category, account, tag, review, unreconciled, page, version });
   const txns = useView<VTransaction>(`v_transactions:${key}`, (sb) => {
     let q = sb.from('v_transactions').select('*', { count: 'exact' });
     if (month) q = q.eq('month', month);
@@ -38,6 +43,7 @@ export default function Transactions() {
     if (account) q = q.eq('account_id', account);
     if (tag) q = q.contains('tags', [tag]);
     if (review) q = q.eq('needs_review', true);
+    if (unreconciled) q = q.eq('reconciled', false);
     return q
       .order('txn_date', { ascending: false })
       .order('created_at', { ascending: false })
@@ -45,12 +51,20 @@ export default function Transactions() {
       .range(from, to);
   });
 
-  const filtered = Boolean(month || category || account || tag || review);
+  const filtered = Boolean(month || category || account || tag || review || unreconciled);
   const total = txns.count;
 
   return (
     <>
-      <PageHeader title="Transactions" description="Newest first. Negative amounts are money out." />
+      <PageHeader
+        title="Transactions"
+        description="Newest first. Negative amounts are money out."
+        actions={
+          <Button variant="primary" onClick={openAdd}>
+            <Icon name="plus" size={16} /> Add
+          </Button>
+        }
+      />
 
       <Card className="mb-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
@@ -112,7 +126,7 @@ export default function Transactions() {
               </select>
             )}
           </Field>
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm text-ink">
               <input
                 type="checkbox"
@@ -122,8 +136,20 @@ export default function Transactions() {
               />
               Needs review
             </label>
+            <label className="flex min-h-10 flex-1 cursor-pointer items-center gap-2 rounded-lg border border-line px-3 text-sm text-ink">
+              <input
+                type="checkbox"
+                checked={unreconciled}
+                onChange={(e) => set({ unreconciled: e.target.checked ? '1' : null })}
+                className="h-4 w-4 accent-[var(--accent)]"
+              />
+              Not reconciled
+            </label>
             {filtered ? (
-              <Button variant="ghost" onClick={() => set({ month: null, category: null, account: null, tag: null, review: null })}>
+              <Button
+                variant="ghost"
+                onClick={() => set({ month: null, category: null, account: null, tag: null, review: null, unreconciled: null })}
+              >
                 Clear
               </Button>
             ) : null}
@@ -150,7 +176,7 @@ export default function Transactions() {
             ) : filtered ? (
               'No transactions match these filters.'
             ) : (
-              'No transactions yet. They appear here after a screenshot import.'
+              'No transactions yet. Add one with the + button, or send Claude a screenshot to import.'
             )
           }
         >
@@ -193,7 +219,25 @@ function withCurrent(months: string[], current: string): string[] {
 }
 
 function TransactionRow({ t }: { t: VTransaction }) {
+  const { openEdit, bump } = useEntry();
   const title = t.merchant ?? t.description_raw;
+  const manual = t.entry_source === 'manual';
+  // Optimistic cleared state, keyed to the server value it was set against so a reload wins.
+  const [override, setOverride] = useState<{ for: boolean; value: boolean } | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+  const cleared = override !== null && override.for === t.cleared ? override.value : t.cleared;
+
+  async function toggleCleared(next: boolean) {
+    setOverride({ for: t.cleared, value: next });
+    setToggleError(null);
+    const res = await setTransactionCleared(t.id, next);
+    if (!res.ok) {
+      setOverride(null);
+      setToggleError(res.error);
+      return;
+    }
+    bump();
+  }
   return (
     <li className={cx('px-4 py-3 sm:px-5', t.needs_review && 'border-l-4 border-warn-line bg-warn-bg/60 pl-3 sm:pl-4')}>
       <div className="flex items-start justify-between gap-3">
@@ -202,7 +246,7 @@ function TransactionRow({ t }: { t: VTransaction }) {
             <span className="truncate text-sm font-medium text-ink" title={t.description_raw}>
               {title}
             </span>
-            {t.status === 'pending' ? <Badge tone="warn">Pending</Badge> : null}
+            {manual ? <Badge tone="accent">Manual</Badge> : t.status === 'pending' ? <Badge tone="warn">Pending</Badge> : null}
             {t.needs_review ? <Badge tone="warn">Needs review</Badge> : null}
           </div>
           <div className="mt-0.5 text-xs text-muted">
@@ -228,6 +272,38 @@ function TransactionRow({ t }: { t: VTransaction }) {
         </div>
         <Money value={t.amount} signed showPlus className="shrink-0 text-sm font-semibold" />
       </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
+        <label className="flex min-h-8 cursor-pointer items-center gap-2 text-xs text-ink">
+          <input
+            type="checkbox"
+            checked={cleared}
+            onChange={(e) => void toggleCleared(e.target.checked)}
+            className="h-4 w-4 accent-[var(--accent)]"
+          />
+          Cleared
+        </label>
+        <label
+          className="flex min-h-8 items-center gap-2 text-xs text-muted"
+          title={t.reconciled ? 'Reconciled by Claude against a bank screenshot' : 'Only Claude can reconcile'}
+        >
+          <input type="checkbox" checked={t.reconciled} disabled readOnly className="h-4 w-4" aria-label="Reconciled (set only by Claude)" />
+          Reconciled
+        </label>
+        {manual && !t.reconciled ? (
+          <button
+            type="button"
+            onClick={() => openEdit(t)}
+            className="ml-auto inline-flex min-h-8 items-center gap-1 rounded-lg px-2 text-xs font-medium text-accent hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <Icon name="edit" size={14} /> Edit
+          </button>
+        ) : null}
+      </div>
+      {toggleError ? (
+        <p role="alert" className="mt-1 text-xs text-danger">
+          {toggleError}
+        </p>
+      ) : null}
     </li>
   );
 }

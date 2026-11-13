@@ -1,0 +1,27 @@
+{
+  "name": "moneyhub",
+  "version": "1.0.0",
+  "description": "Personal finances with **Supabase as the single source of truth**. A **Claude Project** reads bank-app screenshots and writes facts. A **read-only web app** shows the numbers. Every total, balance and safe-to-spend figure is computed by SQL views, so Claude and the web app always report the same numbers.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "npm --prefix web test",
+    "build": "npm --prefix web run build",
+    "typecheck": "npm --prefix web run typecheck",
+    "lint": "npm --prefix web run lint",
+    "dev": "npm --prefix web run dev",
+    "install:web": "npm --prefix web ci"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MedicD21/moneyhub.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MedicD21/moneyhub/issues"
+  },
+  "homepage": "https://github.com/MedicD21/moneyhub#readme"
+}

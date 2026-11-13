@@ -88,6 +88,13 @@ export type VTransaction = {
   import_batch_id: Uuid | null;
   occurrence: number;
   created_at: IsoTimestamp;
+  /** you saw it clear at the bank (informational; you can tick it) */
+  cleared: boolean;
+  /** Claude matched it to a bank screenshot. Only Claude can change this. */
+  reconciled: boolean;
+  reconciled_at: IsoTimestamp | null;
+  /** import = read from a screenshot or chat; manual = typed into the web app */
+  entry_source: 'import' | 'manual';
 };
 
 /** public.v_account_balances. Snapshot-derived columns are null when the account has no snapshot. */
@@ -452,6 +459,47 @@ export type VSetAside = {
   at_cap: boolean;
 };
 
+export type EnvelopeKind = 'rainy_day' | 'locked_savings';
+
+/** public.v_envelopes (20261113000000). Virtual savings: no real money moves. */
+export type VEnvelope = {
+  id: Uuid;
+  kind: EnvelopeKind;
+  name: string;
+  is_active: boolean;
+  balance: number;
+  last_move_date: IsoDate | null;
+  move_count: number;
+};
+
+/** public.v_envelope_moves: positive = set aside into the envelope, negative = moved back to spendable cash. */
+export type VEnvelopeMove = {
+  id: Uuid;
+  envelope_id: Uuid;
+  kind: EnvelopeKind;
+  envelope_name: string;
+  move_date: IsoDate;
+  amount: number;
+  note: string | null;
+  created_at: IsoTimestamp;
+  balance_after: number;
+};
+
+/**
+ * public.v_rainy_day_suggestion: one row. When the current pay period's low point sits below the minimum
+ * balance, suggested_draw is how much of the rainy-day fund would close the gap. Nothing moves on its own.
+ */
+export type VRainyDaySuggestion = {
+  envelope_id: Uuid;
+  rainy_balance: number;
+  binding_date: IsoDate | null;
+  binding_balance: number | null;
+  low_balance_floor: number;
+  gap_to_floor: number;
+  suggested_draw: number;
+  remaining_gap: number;
+};
+
 export type PaycheckExtraDebtItem = {
   type: 'extra_debt';
   name: string;
@@ -523,6 +571,22 @@ export type VDashboard = {
 // read-only guard test and RLS).
 // ---------------------------------------------------------------------------
 
+/** Arguments of public.add_manual_transaction. amount is signed: negative = money out. */
+export type ManualTransactionArgs = {
+  p_amount: number;
+  p_txn_date: IsoDate;
+  p_merchant: string;
+  p_account_id?: Uuid | null;
+  p_category_id?: Uuid | null;
+  p_note?: string | null;
+  p_cleared?: boolean;
+  p_bill_occurrence_id?: Uuid | null;
+  p_debt_id?: Uuid | null;
+};
+
+/** Arguments of public.update_manual_transaction (the account cannot be changed). */
+export type ManualTransactionUpdateArgs = Omit<ManualTransactionArgs, 'p_account_id'> & { p_id: Uuid };
+
 type NoWrite = { [_ in never]: never };
 type ReadOnlyTable<R> = { Row: R; Insert: NoWrite; Update: NoWrite; Relationships: [] };
 type ReadOnlyView<R> = { Row: R; Relationships: [] };
@@ -557,8 +621,24 @@ export type Database = {
       v_dashboard: ReadOnlyView<VDashboard>;
       v_pay_period_forecast: ReadOnlyView<VPayPeriodForecast>;
       v_set_asides: ReadOnlyView<VSetAside>;
+      v_envelopes: ReadOnlyView<VEnvelope>;
+      v_envelope_moves: ReadOnlyView<VEnvelopeMove>;
+      v_rainy_day_suggestion: ReadOnlyView<VRainyDaySuggestion>;
     };
-    Functions: { [_ in never]: never };
+    /**
+     * The only writes the web app can make: narrow, owner-checked SECURITY DEFINER functions
+     * (20261113000000). They are called from src/lib/writes.ts and nowhere else.
+     */
+    Functions: {
+      add_manual_transaction: { Args: ManualTransactionArgs; Returns: Uuid };
+      update_manual_transaction: { Args: ManualTransactionUpdateArgs; Returns: Uuid };
+      delete_manual_transaction: { Args: { p_id: Uuid }; Returns: undefined };
+      set_transaction_cleared: { Args: { p_id: Uuid; p_cleared: boolean }; Returns: undefined };
+      move_envelope_money: {
+        Args: { p_envelope_id: Uuid; p_amount: number; p_note?: string | null; p_move_date?: IsoDate | null };
+        Returns: number;
+      };
+    };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };

@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { useView } from '../hooks/useView';
-import type { VAccountBalance, VAppInfo, VDashboard, VPayPeriodForecast, VUpcomingBill } from '../types/db';
+import { useEntry } from '../components/EntryContext';
+import { RainyDayHint } from '../components/RainyDayHint';
+import type { VAccountBalance, VAppInfo, VDashboard, VEnvelope, VPayPeriodForecast, VUpcomingBill } from '../types/db';
 import { addDays, formatCount, formatCurrency, formatDate, formatDateRange, formatRelativeDays, humanize } from '../lib/format';
 import { Badge, Banner, Card, Money, PageHeader, Row, Stat } from '../components/ui';
 import { cx } from '../lib/cx';
@@ -8,9 +10,10 @@ import { ErrorState, QueryState } from '../components/QueryState';
 import { billStatusBadge } from '../components/billStatus';
 
 export default function Dashboard() {
-  const dash = useView<VDashboard>('v_dashboard', (sb) => sb.from('v_dashboard').select('*').limit(1));
+  const { version } = useEntry();
+  const dash = useView<VDashboard>(`v_dashboard:${version}`, (sb) => sb.from('v_dashboard').select('*').limit(1));
   const appInfo = useView<VAppInfo>('v_app_info', (sb) => sb.from('v_app_info').select('*').limit(1));
-  const forecast = useView<VPayPeriodForecast>('v_pay_period_forecast:current', (sb) =>
+  const forecast = useView<VPayPeriodForecast>(`v_pay_period_forecast:current:${version}`, (sb) =>
     sb.from('v_pay_period_forecast').select('*').eq('period_index', 1).limit(1),
   );
   const current = forecast.data?.[0] ?? null;
@@ -18,7 +21,7 @@ export default function Dashboard() {
 
   // v_app_info.today is the reference date (owner's timezone); 7 days ahead is a date string, not money math.
   const cutoff = today ? addDays(today, 7) : null;
-  const upcoming = useView<VUpcomingBill>(cutoff ? `v_upcoming_bills:${cutoff}` : null, (sb) =>
+  const upcoming = useView<VUpcomingBill>(cutoff ? `v_upcoming_bills:${cutoff}:${version}` : null, (sb) =>
     sb
       .from('v_upcoming_bills')
       .select('*')
@@ -27,7 +30,11 @@ export default function Dashboard() {
       .order('bill_name'),
   );
 
-  const accounts = useView<VAccountBalance>('v_account_balances', (sb) =>
+  const envelopes = useView<VEnvelope>(`v_envelopes:dash:${version}`, (sb) =>
+    sb.from('v_envelopes').select('*').eq('is_active', true).order('kind', { ascending: false }),
+  );
+
+  const accounts = useView<VAccountBalance>(`v_account_balances:${version}`, (sb) =>
     sb.from('v_account_balances').select('*').eq('is_active', true).order('is_liability').order('kind').order('name'),
   );
 
@@ -80,6 +87,29 @@ export default function Dashboard() {
               )}
             </QueryState>
           )}
+        </Card>
+
+        <Card
+          title="Envelopes"
+          subtitle="Virtual savings. No real money moves."
+          action={
+            <Link to="/envelopes" className="text-xs font-medium text-accent underline-offset-2 hover:underline">
+              Manage
+            </Link>
+          }
+        >
+          <QueryState state={envelopes} label="envelopes" empty="No envelopes yet.">
+            {(list) => (
+              <ul className="-my-1 divide-y divide-line">
+                {list.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between gap-3 py-2.5">
+                    <span className="truncate text-sm font-medium text-ink">{e.name}</span>
+                    <Money value={e.balance} className="shrink-0 text-sm font-semibold" />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </QueryState>
         </Card>
 
         <Card title="Accounts" subtitle="Estimated from the last screenshot plus newer transactions">
@@ -136,9 +166,10 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
             <Banner tone="danger" title="Shortfall this pay period">
               {f
                 ? f.binding_balance !== null
-                  ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} around ${formatDate(f.binding_date, 'short')}, ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. See Paychecks for which bills cause it.${f.extra_hours_needed !== null ? ` Rough fix: about ${f.extra_hours_needed} extra overtime hours (about ${formatCurrency(f.extra_hour_net)} per hour after taxes), paid before ${formatDate(f.binding_date, 'short')}.` : ''}`
+                  ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} around ${formatDate(f.binding_date, 'short')}, below your ${formatCurrency(f.low_balance_floor)} minimum balance. See Paychecks for which bills cause it.${f.extra_hours_needed !== null ? ` Rough fix: about ${f.extra_hours_needed} extra overtime hours (about ${formatCurrency(f.extra_hour_net)} per hour after taxes), paid before ${formatDate(f.binding_date, 'short')}.` : ''}`
                   : `Even with no spending, projected cash drops below your ${formatCurrency(f.low_balance_floor)} minimum balance around ${formatDate(f.binding_date, 'short')}.`
                 : `Bills, minimums and set-asides exceed this paycheck. Safe to spend is ${formatCurrency(d.safe_to_spend)}.`}
+              <RainyDayHint />
             </Banner>
           ) : null}
           {isStale ? (

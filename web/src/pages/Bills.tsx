@@ -1,4 +1,5 @@
 import { useView } from '../hooks/useView';
+import { useEntry } from '../components/EntryContext';
 import { useQueryParams } from '../hooks/useParams';
 import type { VAppInfo, VBillMonthTotals, VBillStatus, VMonthlyBillsTotal } from '../types/db';
 import {
@@ -95,13 +96,14 @@ function BillsMonth({
   currentMonth: string | null;
   onMonth: (month: string) => void;
 }) {
-  const bills = useView<VBillStatus>(`v_bill_status:${month}`, (sb) =>
+  const { version } = useEntry();
+  const bills = useView<VBillStatus>(`v_bill_status:${month}:${version}`, (sb) =>
     sb.from('v_bill_status').select('*').eq('due_month', month).order('due_date').order('bill_name'),
   );
-  const monthTotals = useView<VBillMonthTotals>(`v_bill_month_totals:${month}`, (sb) =>
+  const monthTotals = useView<VBillMonthTotals>(`v_bill_month_totals:${month}:${version}`, (sb) =>
     sb.from('v_bill_month_totals').select('*').eq('due_month', month).limit(1),
   );
-  const totals = useView<VMonthlyBillsTotal>('v_monthly_bills_total', (sb) => sb.from('v_monthly_bills_total').select('*').limit(1));
+  const totals = useView<VMonthlyBillsTotal>(`v_monthly_bills_total:${version}`, (sb) => sb.from('v_monthly_bills_total').select('*').limit(1));
 
   return (
     <>

@@ -15,6 +15,10 @@ const PATHS = {
   chevronRight: 'M9 18l6-6-6-6',
   refresh: 'M21 12a9 9 0 1 1-2.64-6.36M21 4v5h-5',
   mail: 'M3 6h18v12H3zM3 7l9 6 9-6',
+  plus: 'M12 5v14M5 12h14',
+  edit: 'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',
+  lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
+  close: 'M6 6l12 12M18 6 6 18',
 } as const;
 
 export type IconName = keyof typeof PATHS;

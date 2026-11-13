@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useView } from "../hooks/useView";
+import { useEntry } from "../components/EntryContext";
+import { RainyDayHint } from "../components/RainyDayHint";
 import type {
   PaycheckBillItem,
   PaycheckDebtMinimumItem,
@@ -23,13 +25,14 @@ import { QueryState } from "../components/QueryState";
 import { billStatusBadge } from "../components/billStatus";
 
 export default function Paychecks() {
-  const periods = useView<VPayPeriod>("v_pay_periods", (sb) =>
+  const { version } = useEntry();
+  const periods = useView<VPayPeriod>(`v_pay_periods:${version}`, (sb) =>
     sb.from("v_pay_periods").select("*").order("period_offset"),
   );
-  const forecast = useView<VPayPeriodForecast>("v_pay_period_forecast", (sb) =>
+  const forecast = useView<VPayPeriodForecast>(`v_pay_period_forecast:${version}`, (sb) =>
     sb.from("v_pay_period_forecast").select("*").order("period_index"),
   );
-  const setAsides = useView<VSetAside>("v_set_asides", (sb) =>
+  const setAsides = useView<VSetAside>(`v_set_asides:${version}`, (sb) =>
     sb.from("v_set_asides").select("*").eq("is_active", true).order("name"),
   );
   // Join on period_start (lookup only, no arithmetic). Missing forecast rows simply hide the forecast box.
@@ -504,7 +507,7 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
       ) : null}
       <p className="mt-1.5 text-xs text-muted">
         {f.shortfall && f.binding_date && f.binding_balance !== null
-          ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} on ${formatDate(f.binding_date, "short")}, which is ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. Any spending now makes that gap bigger.`
+          ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} on ${formatDate(f.binding_date, "short")}, which is below your ${formatCurrency(f.low_balance_floor)} minimum balance. Any spending now makes that gap bigger.`
           : `Keeps your balance above ${formatCurrency(f.low_balance_floor)} through the next paychecks${
               f.binding_date
                 ? `; tightest point ${formatDate(f.binding_date, "short")}`
@@ -514,6 +517,7 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
           ? ` Based on cash as of ${formatDate(f.cash_as_of, "short")}.`
           : ""}
       </p>
+      {f.shortfall && f.is_current ? <RainyDayHint /> : null}
       {f.shortfall && f.extra_hours_needed !== null ? (
         <p className="mt-1.5 text-xs text-ink">
           Rough fix: about {f.extra_hours_needed} extra overtime hours (about{" "}

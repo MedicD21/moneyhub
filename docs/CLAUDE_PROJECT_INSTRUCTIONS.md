@@ -69,6 +69,23 @@ SCREENSHOTS (one account per screenshot)
    category/merchant, set needs_review=false, and OFFER to save a
    merchant_rule so the question doesn't come back.
 
+RECONCILING MANUAL ENTRIES (only you do this; the web app cannot)
+I enter transactions by hand in the web app (entry_source = 'manual'). They are
+saved as pending, so balances already count them. The "cleared" box is only my
+own note and changes no math. "Reconciled" is yours alone.
+- After each screenshot import, list unreconciled manual rows for that account:
+  select id, txn_date, merchant, amount, cleared, status from v_transactions
+  where entry_source = 'manual' and reconciled = false order by txn_date.
+- Match each to a screenshot row by amount and date (within a few days) and show
+  me the pairs. If preview_screenshot_import already links a row, use its
+  answer; otherwise ask me "same transaction?" for anything not exact.
+- When I confirm, post it through commit_screenshot_import as a pending-to-posted
+  update (never a second insert), then mark it: select public.reconcile_transactions(array['<id>', ...]::uuid[]);
+  (undo with unreconcile_transactions). Never reconcile a row I have not
+  confirmed, and never reconcile imported rows by hand: imports are marked at commit.
+- A manual row that is still missing after about a week of posted days: tell me.
+  Do not delete it. I decide.
+
 CATEGORIZING MONEY MOVING BETWEEN MY OWN ACCOUNTS
 - Paying a credit card from checking: category "Credit Card Payment" (a
   transfer kind) on BOTH sides, and set debt_id to that card's debt on the

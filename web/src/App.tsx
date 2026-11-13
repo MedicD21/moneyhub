@@ -13,6 +13,7 @@ const Bills = lazy(() => import('./pages/Bills'));
 const Paychecks = lazy(() => import('./pages/Paychecks'));
 const Spending = lazy(() => import('./pages/Spending'));
 const Debts = lazy(() => import('./pages/Debts'));
+const Envelopes = lazy(() => import('./pages/Envelopes'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Splash() {
@@ -38,6 +39,7 @@ function Gate() {
             ['/paychecks', Paychecks],
             ['/spending', Spending],
             ['/debts', Debts],
+            ['/envelopes', Envelopes],
             ['*', NotFound],
           ] as const
         ).map(([path, Page]) => (

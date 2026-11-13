@@ -3,15 +3,21 @@ import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { Icon, type IconName } from './Icon';
 import { cx } from '../lib/cx';
+import { EntryProvider, useEntry } from './EntryContext';
+import { TransactionSheet } from './TransactionSheet';
 
-const NAV: Array<{ to: string; label: string; short: string; icon: IconName }> = [
+const NAV: Array<{ to: string; label: string; short: string; icon: IconName; desktopOnly?: boolean }> = [
   { to: '/', label: 'Dashboard', short: 'Home', icon: 'home' },
   { to: '/transactions', label: 'Transactions', short: 'Activity', icon: 'list' },
   { to: '/bills', label: 'Bills', short: 'Bills', icon: 'calendar' },
   { to: '/paychecks', label: 'Paychecks', short: 'Paychecks', icon: 'wallet' },
   { to: '/spending', label: 'Spending', short: 'Spending', icon: 'chart' },
   { to: '/debts', label: 'Debts', short: 'Debts', icon: 'card' },
+  // Reached from the Dashboard card on phones (the bottom bar has room for six tabs).
+  { to: '/envelopes', label: 'Envelopes', short: 'Envelopes', icon: 'lock', desktopOnly: true },
 ];
+
+const MOBILE_NAV = NAV.filter((item) => !item.desktopOnly);
 
 function SignOutButton({ compact = false }: { compact?: boolean }) {
   const { signOut, session } = useAuth();
@@ -50,7 +56,31 @@ function Brand() {
   );
 }
 
+function AddButton() {
+  const { openAdd } = useEntry();
+  return (
+    <button
+      type="button"
+      onClick={openAdd}
+      aria-label="Add transaction"
+      className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 grid h-14 w-14 place-items-center rounded-full bg-accent text-accent-ink shadow-lg hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent md:right-8 md:bottom-8"
+    >
+      <Icon name="plus" size={26} />
+    </button>
+  );
+}
+
 export function Layout() {
+  return (
+    <EntryProvider>
+      <Shell />
+      <AddButton />
+      <TransactionSheet />
+    </EntryProvider>
+  );
+}
+
+function Shell() {
   const { session } = useAuth();
   return (
     <div className="min-h-dvh bg-bg">
@@ -107,7 +137,7 @@ export function Layout() {
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-6 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        {NAV.map((item) => (
+        {MOBILE_NAV.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

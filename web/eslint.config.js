@@ -25,13 +25,29 @@ export default tseslint.config(
       ...reactHooks.configs.flat.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      // Hard rule: this app is read-only. Forbid the write methods at lint time too.
+      // Hard rule: tables are never written from the browser. The only write path is a fixed set of
+      // owner-checked RPCs, and `.rpc(` is allowed in exactly one file (src/lib/writes.ts, see override below).
       'no-restricted-syntax': [
         'error',
         {
-          selector:
-            "CallExpression[callee.property.name=/^(insert|update|upsert|delete|rpc)$/]",
-          message: 'Money Hub web is read-only: no insert/update/upsert/delete/rpc calls.',
+          selector: "CallExpression[callee.property.name=/^(insert|update|upsert|delete)$/]",
+          message: 'Money Hub web never writes tables directly: no insert/update/upsert/delete calls.',
+        },
+        {
+          selector: "CallExpression[callee.property.name='rpc']",
+          message: 'Call database functions only through src/lib/writes.ts.',
+        },
+      ],
+    },
+  },
+  {
+    files: ['src/lib/writes.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.property.name=/^(insert|update|upsert|delete)$/]",
+          message: 'Money Hub web never writes tables directly: no insert/update/upsert/delete calls.',
         },
       ],
     },

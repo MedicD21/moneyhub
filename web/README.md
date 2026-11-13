@@ -1,8 +1,10 @@
 # Money Hub web (Phase 3)
 
-A read-only React app over the Money Hub Supabase views. It never writes: every
-request is `.from(<view or table>).select(...)`, and every number on screen comes
-straight from a view column. The database does all the math (see
+A React app over the Money Hub Supabase views. It reads with
+`.from(<view or table>).select(...)`, and every number on screen comes straight from a
+view column. Its only writes are manual transactions and envelope moves, sent through
+five narrow, owner-checked database functions (see "Write guarantees" below). The
+database does all the math (see
 `../supabase/migrations/20261112000300_views.sql` and `…000400_paycheck_and_dashboard.sql`).
 
 Stack: React 18, TypeScript (strict), Vite, Tailwind CSS v4, Recharts, supabase-js v2, react-router.
@@ -24,7 +26,7 @@ npm run dev                  # http://localhost:5173
 | `npm run build`     | `tsc -b && vite build` into `dist/`                              |
 | `npm run typecheck` | TypeScript project build, no output                              |
 | `npm run lint`      | ESLint (typescript-eslint type-checked rules, react-hooks)       |
-| `npm run test`      | Vitest: `format.ts` unit tests and the read-only guard           |
+| `npm run test`      | Vitest: `format.ts` and `money.ts` unit tests and the write-surface guard           |
 
 ### Environment variables
 
@@ -38,13 +40,29 @@ anon role has no grants, and the `authenticated` role can only `SELECT` the
 owner's rows (RLS, `20261112000600_security.sql`). If either variable is
 missing or malformed the app shows a setup screen instead of crashing.
 
-## Read-only guarantees
+## Write guarantees
 
-- `tests/readonly-guard.test.ts` scans `src/` and fails on `.insert(`, `.update(`,
-  `.upsert(`, `.delete(` or `.rpc(`. ESLint has a matching `no-restricted-syntax` rule.
-- `src/types/db.ts` gives the typed client `Insert`/`Update` types with no keys,
-  so a write would also fail to compile.
-- The database itself only grants `SELECT` to `authenticated`.
+The browser can never write a table. Tables and views are `SELECT`-only for the signed-in
+user. The only writes are five `SECURITY DEFINER` functions that check the caller is the
+app owner (`20261113000000_manual_entry_and_envelopes.sql`):
+
+| Function | Used for |
+| --- | --- |
+| `add_manual_transaction` / `update_manual_transaction` / `delete_manual_transaction` | The + button and the Edit action on manual rows |
+| `set_transaction_cleared` | The Cleared checkbox |
+| `move_envelope_money` | Rainy-day fund and locked savings moves (virtual; no real money moves) |
+
+- Manual rows are stored as `pending`, so balances count them until Claude's next screenshot import.
+- **Reconciled is Claude-only.** `reconcile_transactions` / `unreconcile_transactions` are not
+  granted to the web role, and a trigger blocks web sessions from changing `reconciled`,
+  from editing the amount, date, account or status of a reconciled row, and from deleting
+  reconciled or imported rows.
+- `src/lib/writes.ts` is the only file that may call a database function.
+  `tests/readonly-guard.test.ts` fails on any `.insert(`, `.update(`, `.upsert(` or `.delete(` in
+  `src/`, on `.rpc(` anywhere except `writes.ts`, on any function not in the whitelist of five,
+  and on any mention of the reconcile functions. ESLint has matching `no-restricted-syntax` rules.
+- `src/types/db.ts` gives the typed client `Insert`/`Update` types with no keys, so a direct
+  table write would also fail to compile.
 
 ## Deploying to Vercel
 
