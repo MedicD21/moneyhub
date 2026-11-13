@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const WRITES_FILE = ['lib', 'writes.ts'].join(sep);
+const READS_FILE = ['lib', 'reads.ts'].join(sep);
 const TABLE_WRITE = /\.\s*(insert|update|upsert|delete)\s*\(/g;
 const RPC_CALL = /\.\s*rpc\s*\(/g;
 const RPC_NAME = /\.\s*rpc\s*\(\s*['"]([a-z_]+)['"]/g;
@@ -28,6 +29,9 @@ const ALLOWED_RPCS = [
   'create_set_aside',
   'update_set_aside',
 ];
+
+// Read-only RPCs (STABLE, never write tables). Called only from src/lib/reads.ts.
+const ALLOWED_READ_RPCS = ['simulate_debt_plan'];
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -72,9 +76,9 @@ describe('write-surface guard', () => {
     expect(violations, `Direct table writes found:\n${violations.join('\n')}`).toEqual([]);
   });
 
-  it('calls rpc only from src/lib/writes.ts', () => {
+  it('calls rpc only from src/lib/writes.ts and src/lib/reads.ts', () => {
     const violations = walk(SRC)
-      .filter((file) => relative(SRC, file) !== WRITES_FILE)
+      .filter((file) => ![WRITES_FILE, READS_FILE].includes(relative(SRC, file)))
       .flatMap((file) => hits(readFileSync(file, 'utf8'), RPC_CALL).map((v) => `${relative(SRC, file)}:${v}`));
     expect(violations, `rpc() outside writes.ts:\n${violations.join('\n')}`).toEqual([]);
   });
@@ -86,6 +90,17 @@ describe('write-surface guard', () => {
     expect(named.length, 'every rpc call must use a literal function name').toBe(total);
     for (const name of named) expect(ALLOWED_RPCS, `${name} is not whitelisted`).toContain(name);
     expect(new Set(named)).toEqual(new Set(ALLOWED_RPCS));
+  });
+
+  it('reads.ts calls only whitelisted read-only functions, by literal name', () => {
+    const source = readFileSync(join(SRC, 'lib', 'reads.ts'), 'utf8');
+    const total = hits(source, RPC_CALL).length;
+    const named = [...source.matchAll(RPC_NAME)].map((m) => m[1]);
+    expect(named.length, 'every rpc call must use a literal function name').toBe(total);
+    for (const name of named) expect(ALLOWED_READ_RPCS, `${name} is not whitelisted`).toContain(name);
+    expect(new Set(named)).toEqual(new Set(ALLOWED_READ_RPCS));
+    const writes = readFileSync(join(SRC, 'lib', 'writes.ts'), 'utf8');
+    for (const name of ALLOWED_READ_RPCS) expect(writes, `${name} must not be called from writes.ts`).not.toContain(name);
   });
 
   it('never exposes reconciliation to the browser', () => {

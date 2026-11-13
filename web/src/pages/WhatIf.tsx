@@ -7,13 +7,13 @@ import { ScenarioControls } from '../components/ScenarioControls';
 import { ScenarioResults } from '../components/ScenarioResults';
 import { simulateDebtPlan } from '../lib/reads';
 import { decodeScenario, defaultDraft, scenarioParams, type ScenarioDraft } from '../lib/scenarios';
-import type { DebtSimulationResult, VBillStatus, VDebt } from '../types/db';
+import type { BillRow, DebtSimulationResult, VDebt } from '../types/db';
 
 export default function WhatIf() {
   const { version } = useEntry();
   const baseline = useView<DebtSimulationResult>(`what-if:baseline:${version}`, (sb, signal) => simulateDebtPlan(sb, {}, signal));
   const debts = useView<VDebt>(`what-if:debts:${version}`, (sb, signal) => sb.from('v_debts').select('*').eq('is_active', true).order('name').abortSignal(signal));
-  const bills = useView<VBillStatus>(`what-if:bills:${version}`, (sb, signal) => sb.from('v_bill_status').select('*').eq('is_active', true).order('name').abortSignal(signal));
+  const bills = useView<BillRow>(`what-if:bills:${version}`, (sb, signal) => sb.from('bills').select('*').eq('is_active', true).eq('frequency', 'monthly').is('debt_id', null).order('name').abortSignal(signal));
   const base = baseline.data?.[0];
   const failed = baseline.error ? baseline : debts.error ? debts : bills.error ? bills : null;
   return <>
@@ -25,7 +25,7 @@ export default function WhatIf() {
   </>;
 }
 
-export function ScenarioEditor({ baseline, debts, bills, version }: { baseline: DebtSimulationResult; debts: VDebt[]; bills: VBillStatus[]; version: number }) {
+export function ScenarioEditor({ baseline, debts, bills, version }: { baseline: DebtSimulationResult; debts: VDebt[]; bills: BillRow[]; version: number }) {
   const [search, setSearch] = useSearchParams();
   const initial = defaultDraft(baseline);
   const decoded = decodeScenario(search.get('scenario'), initial);

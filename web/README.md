@@ -9,8 +9,12 @@ database does all the math (see
 
 Stack: React 18, TypeScript (strict), Vite, Tailwind CSS v4, Recharts, supabase-js v2, react-router.
 
-The typed `simulate_debt_plan` RPC is read-only and has no UI yet. Its inputs,
-Affirm principal estimates, and historical regression are documented in
+The **What if** page (`/what-if`) previews debt-payoff scenarios through the read-only
+`simulate_debt_plan` RPC (strategy, extra monthly, lump sums, raise, overtime, early payoff,
+stopped payments). The scenario lives in the page URL; nothing is saved and the active plan is
+never changed. The RPC is called only from `src/lib/reads.ts`, and the write-surface guard test
+whitelists it separately from the nine writes. Inputs, Affirm principal estimates, the
+affordability screen and the historical regression are in
 [debt simulation](../docs/debt-simulation.md).
 
 ## Local development

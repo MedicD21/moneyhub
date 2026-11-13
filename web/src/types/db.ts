@@ -101,6 +101,27 @@ export type CategoryRow = {
   updated_at: IsoTimestamp;
 };
 
+/** public.bills (read-only here: the What if page lists stoppable standalone bills) */
+export type BillRow = {
+  id: Uuid;
+  owner_id: Uuid;
+  name: string;
+  amount: number;
+  is_variable: boolean;
+  frequency: BillFrequency;
+  due_day: number | null;
+  anchor_date: IsoDate | null;
+  autopay: boolean;
+  pay_from_account_id: Uuid | null;
+  category_id: Uuid | null;
+  match_pattern: string | null;
+  is_active: boolean;
+  created_at: IsoTimestamp;
+  updated_at: IsoTimestamp;
+  end_date: IsoDate | null;
+  debt_id: Uuid | null;
+};
+
 // ---------------------------------------------------------------------------
 // 20261112000300_views.sql
 // ---------------------------------------------------------------------------
@@ -651,6 +672,7 @@ export type Database = {
   public: {
     Tables: {
       accounts: ReadOnlyTable<AccountRow>;
+      bills: ReadOnlyTable<BillRow>;
       categories: ReadOnlyTable<CategoryRow>;
     };
     Views: {
@@ -683,7 +705,7 @@ export type Database = {
     };
     /**
      * Owner-checked RPCs. Writes are called only from src/lib/writes.ts.
-     * simulate_debt_plan is read-only and has no UI caller yet.
+     * simulate_debt_plan is read-only; its only caller is src/lib/reads.ts (What if page).
      */
     Functions: {
       simulate_debt_plan: { Args: { p_params?: DebtSimulationParams }; Returns: DebtSimulationResult };

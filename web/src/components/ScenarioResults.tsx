@@ -1,7 +1,7 @@
 import { Line, LineChart, ResponsiveContainer, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import type { DebtSimulationResult } from '../types/db';
 import { comparisonSeries } from '../lib/scenarios';
-import { formatCurrency, formatCurrencyCompact, formatDate, formatMonth } from '../lib/format';
+import { formatCurrencyCompact, formatDate, formatMonth } from '../lib/format';
 import { Badge, Banner, Card, CollapsibleCard, Money, Row, Stat } from './ui';
 import { ChartFrame, MoneyTooltip } from './charts';
 import { axisLine, axisTick, gridDash, gridStroke, lineCursor } from './chartTheme';

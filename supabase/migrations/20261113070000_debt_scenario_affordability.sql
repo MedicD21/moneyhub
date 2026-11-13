@@ -9,7 +9,7 @@ declare
 begin
   -- Chart totals and affordability arithmetic stay in PostgreSQL.
   select coalesce(jsonb_agg(to_jsonb(m) order by month),'[]') into v_monthly from (
-    select value->>'month' month, sum((value->>'start')::numeric) opening_balance,
+    select value->>'month' as month, sum((value->>'start')::numeric) opening_balance,
       sum((value->>'end')::numeric) balance, sum((value->>'payment')::numeric) payment,
       sum((value->>'minimum')::numeric) minimum, sum((value->>'interest')::numeric) interest,
       sum((value->>'fee')::numeric) fees

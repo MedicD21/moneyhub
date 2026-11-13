@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { DebtSimulationResult, VBillStatus, VDebt } from '../types/db';
+import type { BillRow, DebtSimulationResult, VDebt } from '../types/db';
 import type { ScenarioDraft } from '../lib/scenarios';
 import { Button, Card, Field, inputClass } from './ui';
 import { formatCurrency } from '../lib/format';
@@ -13,7 +13,7 @@ function Group({ title, children, hint }: { title: string; children: ReactNode; 
 }
 
 export function ScenarioControls({ draft: d, onChange, baseline, debts, bills }: {
-  draft: ScenarioDraft; onChange: (d: ScenarioDraft) => void; baseline: DebtSimulationResult; debts: VDebt[]; bills: VBillStatus[];
+  draft: ScenarioDraft; onChange: (d: ScenarioDraft) => void; baseline: DebtSimulationResult; debts: VDebt[]; bills: BillRow[];
 }) {
   const change = (patch: Partial<ScenarioDraft>) => onChange({ ...d, ...patch });
   const today = baseline.affordability.as_of_date;

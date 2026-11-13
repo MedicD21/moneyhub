@@ -6,7 +6,14 @@
 plan are required. Anonymous callers and other users cannot execute it. The
 private calculation helper is inaccessible to application roles.
 
-This migration adds no UI. Simulations do not save or activate plans.
+Simulations never save or activate plans. The web app's **What if** page (`/what-if`,
+linked from Debts) is the UI for this RPC and calls it through `web/src/lib/reads.ts`.
+
+`20261113070000_debt_scenario_affordability.sql` decorates the result with
+`monthly_balances`, `defaults` and `affordability` (below). **It is not yet applied to
+production** as of 2026-11-13; until it is, the What if page shows "The scenario database
+update has not been installed yet." It passes the local pgTAP suite
+(`18_debt_scenario_affordability.test.sql`).
 
 Installed in Money Hub production on November 13, 2026, from
 `20261113060000_simulate_debt_plan.sql`; Supabase recorded apply version
@@ -152,3 +159,23 @@ Tests run using the repository's pgTAP suite (`supabase test db` after local
 migrations, or `scripts/test-db-local.sh` with its prerequisites). They cover all
 inputs, golden compatibility, same-day balance selection, rollover, zero-APR
 minimums, money conservation, ownership, permissions, and a read-only transaction.
+
+## Scenario context (migration 20261113070000)
+
+The migration keeps `{schedule, summary}` unchanged and adds three keys. All arithmetic stays
+in PostgreSQL; the browser only displays these values.
+
+- `monthly_balances`: per month, the sums of the schedule's `start` (`opening_balance`), `end`
+  (`balance`), `payment`, `minimum`, `interest` and `fee` (`fees`). Used for the balance chart.
+- `defaults`: the active plan's `strategy`, `extra_monthly`, `start_month` (the month of its
+  `balances_as_of`) and structured `params`, so the form can show what is inherited.
+- `affordability`: a conservative screen against `v_pay_period_forecast`, for the periods the
+  forecast already displays (`full_plan_checked` is always `false`). Per period it reports the
+  baseline obligations, the scenario's regular extra (spread across remaining calendar days),
+  lump-sum cash (charged on its date), added income (overtime at `extra_hour_net` and raises,
+  only in the pay period holding that pay date), released obligations (minimums of debts paid
+  off earlier, stopped bills and debt minimums, and the active plan's own extra so it is not
+  charged twice), projected cash and the gap to the low-balance floor (`flagged`,
+  `cash_shortfall`). `status` is `unavailable`, `unfunded_what_if`, `at_risk` or
+  `within_forecast`. Rainy-day money is not counted as available cash; `suggested_draw` is the
+  smaller of the rainy-day balance and the peak gap, and nothing is moved.
