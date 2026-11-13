@@ -2,18 +2,21 @@ import { useState, type FormEvent } from 'react';
 import { useView } from '../hooks/useView';
 import type { VEnvelope, VEnvelopeMove, VRainyDaySuggestion } from '../types/db';
 import { formatCurrency, formatDate } from '../lib/format';
-import { amountToInputText, parseAmountCents, sanitizeAmountInput } from '../lib/money';
-import { moveEnvelopeMoney } from '../lib/writes';
+import { amountToInputText, centsToDollars, parseAmountCents, sanitizeAmountInput } from '../lib/money';
+import { createEnvelope, moveEnvelopeMoney, updateEnvelope } from '../lib/writes';
 import { cx } from '../lib/cx';
-import { Banner, Button, Card, Field, Money, PageHeader, Stat, inputClass } from '../components/ui';
+import { Banner, Button, Card, CollapsibleCard, Field, Money, PageHeader, Stat, inputClass } from '../components/ui';
 import { QueryState } from '../components/QueryState';
 import { Icon } from '../components/Icon';
 import { useEntry } from '../components/EntryContext';
 
+const NAME_MAX = 60;
+
 export default function Envelopes() {
   const { version } = useEntry();
-  const envelopes = useView<VEnvelope>(`v_envelopes:${version}`, (sb) =>
-    sb.from('v_envelopes').select('*').eq('is_active', true).order('kind', { ascending: false }),
+  // rainy_day, locked_savings, then goal envelopes in the order they were created
+  const envelopes = useView<VEnvelope>(`v_envelopes:all:${version}`, (sb) =>
+    sb.from('v_envelopes').select('*').order('kind', { ascending: false }).order('created_at'),
   );
   const suggestion = useView<VRainyDaySuggestion>(`v_rainy_day_suggestion:${version}`, (sb) =>
     sb.from('v_rainy_day_suggestion').select('*').limit(1),
@@ -26,22 +29,43 @@ export default function Envelopes() {
       .order('created_at', { ascending: false })
       .limit(50),
   );
+  const archived = (envelopes.data ?? []).filter((e) => !e.is_active);
 
   return (
     <>
       <PageHeader
         title="Envelopes"
-        description="Virtual savings. No real money moves: an envelope only changes how much of your cash the forecast treats as spendable."
+        description="Virtual savings pots. No real money moves: an envelope only changes how much of your cash the forecast treats as spendable. Set-asides (per-paycheck reservations) live on the Paychecks page."
       />
-      <QueryState state={envelopes} label="envelopes" empty="No envelopes yet." loadingLines={6}>
+      <QueryState
+        state={envelopes}
+        label="envelopes"
+        empty="No envelopes yet."
+        loadingLines={6}
+        isEmpty={(rows) => !rows.some((e) => e.is_active)}
+      >
         {(rows) => (
           <div className="grid gap-4 md:grid-cols-2">
-            {rows.map((e) => (
-              <EnvelopeCard key={e.id} env={e} suggestion={e.kind === 'rainy_day' ? (suggestion.data?.[0] ?? null) : null} />
-            ))}
+            {rows
+              .filter((e) => e.is_active)
+              .map((e) => (
+                <EnvelopeCard key={e.id} env={e} suggestion={e.kind === 'rainy_day' ? (suggestion.data?.[0] ?? null) : null} />
+              ))}
           </div>
         )}
       </QueryState>
+
+      <NewEnvelopeCard />
+
+      {archived.length > 0 ? (
+        <CollapsibleCard className="mt-4" title="Archived envelopes" meta={archived.length}>
+          <ul className="-mx-4 divide-y divide-line sm:-mx-5">
+            {archived.map((e) => (
+              <ArchivedRow key={e.id} env={e} />
+            ))}
+          </ul>
+        </CollapsibleCard>
+      ) : null}
 
       <Card className="mt-4" title="Recent moves" subtitle="Newest first">
         <QueryState state={moves} label="envelope moves" empty="Nothing moved yet.">
@@ -69,12 +93,140 @@ export default function Envelopes() {
   );
 }
 
+function NewEnvelopeCard() {
+  const [open, setOpen] = useState(false);
+  const [session, setSession] = useState(0);
+  const [done, setDone] = useState<string | null>(null);
+  return (
+    <Card className="mt-4" title="New envelope" subtitle="A named savings pot, such as Vacation. It starts at $0; add money to it once it exists.">
+      {done ? (
+        <p role="status" className="mb-3 text-sm font-medium text-pos">
+          {done}
+        </p>
+      ) : null}
+      {open ? (
+        <NewEnvelopeForm
+          key={session}
+          onCancel={() => setOpen(false)}
+          onCreated={(name) => {
+            setDone(`Created ${name}.`);
+            setOpen(false);
+            setSession((s) => s + 1);
+          }}
+        />
+      ) : (
+        <Button
+          onClick={() => {
+            setDone(null);
+            setOpen(true);
+          }}
+        >
+          <Icon name="plus" size={16} /> New envelope
+        </Button>
+      )}
+    </Card>
+  );
+}
+
+function NewEnvelopeForm({ onCancel, onCreated }: { onCancel: () => void; onCreated: (name: string) => void }) {
+  const { bump } = useEntry();
+  const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const res = await createEnvelope(name);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    bump();
+    onCreated(name.trim());
+  }
+
+  return (
+    <form onSubmit={(e) => void submit(e)} className="space-y-3" noValidate>
+      <Field label="Name">
+        <input
+          className={inputClass}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={NAME_MAX}
+          autoComplete="off"
+          autoCapitalize="words"
+          enterKeyHint="done"
+          placeholder="e.g. Vacation"
+          autoFocus
+        />
+      </Field>
+      {error ? <Banner tone="danger" title="Not created">{error}</Banner> : null}
+      <div className="flex gap-2">
+        <Button type="submit" variant="primary" disabled={busy} className="min-h-11 flex-1">
+          {busy ? 'Creating…' : 'Create envelope'}
+        </Button>
+        <Button onClick={onCancel} disabled={busy} className="min-h-11">
+          Cancel
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+function ArchivedRow({ env }: { env: VEnvelope }) {
+  const { bump } = useEntry();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function restore() {
+    setBusy(true);
+    setError(null);
+    const res = await updateEnvelope(env.id, env.name, true);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    bump();
+  }
+  return (
+    <li className="px-4 py-3 sm:px-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium text-ink">{env.name}</div>
+          <div className="mt-0.5 text-xs text-muted">
+            {env.last_move_date ? `Last move ${formatDate(env.last_move_date)}` : 'Never used'}
+          </div>
+        </div>
+        <Button onClick={() => void restore()} disabled={busy} className="shrink-0">
+          {busy ? 'Restoring…' : 'Restore'}
+        </Button>
+      </div>
+      {error ? (
+        <p role="alert" className="mt-1 text-xs text-danger">
+          {error}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
 type Mode = 'in' | 'out';
+
+function subtitleFor(env: VEnvelope): string {
+  if (env.kind === 'locked_savings') return 'Never used for bills. The forecast cannot draw on it.';
+  if (env.kind === 'rainy_day') return 'Held back from spending. A short pay period gets a suggested draw; you decide.';
+  return 'Your savings pot. Like locked savings, the forecast never spends it or suggests a draw from it.';
+}
 
 function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyDaySuggestion | null }) {
   const { bump } = useEntry();
   const locked = env.kind === 'locked_savings';
+  const goal = env.kind === 'goal';
   const [mode, setMode] = useState<Mode | null>(null);
+  const [editing, setEditing] = useState(false);
   const [amountText, setAmountText] = useState('');
   const [note, setNote] = useState('');
   const [confirm, setConfirm] = useState(false);
@@ -84,6 +236,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
 
   function open(next: Mode, prefill = '') {
     setMode(next);
+    setEditing(false);
     setAmountText(prefill);
     setNote('');
     setConfirm(false);
@@ -105,7 +258,7 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
     }
     setBusy(true);
     setError(null);
-    const dollars = cents / 100;
+    const dollars = centsToDollars(cents);
     const res = await moveEnvelopeMoney(env.id, mode === 'in' ? dollars : -dollars, note.trim() || null);
     setBusy(false);
     if (!res.ok) {
@@ -118,22 +271,37 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
     bump();
   }
 
-  const showSuggestion = !locked && suggestion !== null && suggestion.gap_to_floor > 0;
+  const showSuggestion = env.kind === 'rainy_day' && suggestion !== null && suggestion.gap_to_floor > 0;
 
   return (
     <Card
       title={env.name}
-      subtitle={
-        locked
-          ? 'Never used for bills. The forecast cannot draw on it.'
-          : 'Held back from spending. A short pay period gets a suggested draw; you decide.'
+      subtitle={subtitleFor(env)}
+      action={
+        locked ? (
+          <Icon name="lock" size={18} className="text-muted" />
+        ) : goal ? (
+          <button
+            type="button"
+            onClick={() => {
+              setEditing((v) => !v);
+              setMode(null);
+              setDone(null);
+            }}
+            aria-expanded={editing}
+            className="-my-2.5 inline-flex min-h-10 shrink-0 items-center gap-1 rounded-lg px-2 text-sm font-medium text-accent hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
+          >
+            <Icon name="edit" size={16} /> Edit
+          </button>
+        ) : null
       }
-      action={locked ? <Icon name="lock" size={18} className="text-muted" /> : null}
     >
       <Stat label="Balance" value={<Money value={env.balance} />} emphasis />
       <div className="mt-1 text-xs text-muted">
         {env.last_move_date ? `Last move ${formatDate(env.last_move_date)}` : 'Nothing moved yet'}
       </div>
+
+      {editing ? <GoalEditForm env={env} onDone={() => setEditing(false)} /> : null}
 
       {showSuggestion ? (
         <div className="mt-3">
@@ -197,9 +365,9 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
           <p className="text-xs text-muted">
             {mode === 'in'
               ? 'This lowers the cash the forecast treats as spendable. Envelopes can hold only cash that set-asides are not already holding.'
-              : locked
-                ? 'This puts the money back into spendable cash and into the forecast.'
-                : 'This puts the money back into spendable cash, which raises your safe-to-spend.'}
+              : env.kind === 'rainy_day'
+                ? 'This puts the money back into spendable cash, which raises your safe-to-spend.'
+                : 'This puts the money back into spendable cash and into the forecast.'}
           </p>
           {locked && mode === 'out' ? (
             <label className="flex min-h-10 cursor-pointer items-center gap-3 text-sm text-ink">
@@ -219,5 +387,64 @@ function EnvelopeCard({ env, suggestion }: { env: VEnvelope; suggestion: VRainyD
         </form>
       ) : null}
     </Card>
+  );
+}
+
+/** Rename or archive a goal envelope. Archiving needs a $0 balance (the database enforces it too). */
+function GoalEditForm({ env, onDone }: { env: VEnvelope; onDone: () => void }) {
+  const { bump } = useEntry();
+  const [name, setName] = useState(env.name);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const canArchive = env.balance === 0;
+
+  async function save(isActive: boolean) {
+    setBusy(true);
+    setError(null);
+    const res = await updateEnvelope(env.id, isActive ? name : env.name, isActive);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    bump();
+    onDone();
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        void save(true);
+      }}
+      className="mt-3 space-y-3 rounded-xl border border-line p-3"
+      noValidate
+    >
+      <Field label="Name">
+        <input
+          className={inputClass}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={NAME_MAX}
+          autoComplete="off"
+          autoCapitalize="words"
+          enterKeyHint="done"
+        />
+      </Field>
+      {error ? <Banner tone="danger" title="Not saved">{error}</Banner> : null}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" variant="primary" disabled={busy} className="min-h-11 flex-1">
+          {busy ? 'Saving…' : 'Save name'}
+        </Button>
+        <Button onClick={() => void save(false)} disabled={busy || !canArchive} className="min-h-11">
+          Archive
+        </Button>
+      </div>
+      <p className="text-xs text-muted">
+        {canArchive
+          ? 'Archiving hides the envelope. Its history stays, and you can restore it later.'
+          : 'To archive this envelope, move its money out first.'}
+      </p>
+    </form>
   );
 }

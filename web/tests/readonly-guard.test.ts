@@ -23,6 +23,10 @@ const ALLOWED_RPCS = [
   'delete_manual_transaction',
   'set_transaction_cleared',
   'move_envelope_money',
+  'create_envelope',
+  'update_envelope',
+  'create_set_aside',
+  'update_set_aside',
 ];
 
 function walk(dir: string): string[] {

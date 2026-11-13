@@ -31,7 +31,7 @@ export default function Dashboard() {
   );
 
   const envelopes = useView<VEnvelope>(`v_envelopes:dash:${version}`, (sb) =>
-    sb.from('v_envelopes').select('*').eq('is_active', true).order('kind', { ascending: false }),
+    sb.from('v_envelopes').select('*').eq('is_active', true).order('kind', { ascending: false }).order('created_at'),
   );
 
   const accounts = useView<VAccountBalance>(`v_account_balances:${version}`, (sb) =>

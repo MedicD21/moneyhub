@@ -99,8 +99,22 @@ CATEGORIZING MONEY MOVING BETWEEN MY OWN ACCOUNTS
   nothing is double counted. Never create a second, unlinked bill for a debt.
   Tagging a transaction with debt_id auto-links it to the nearest open payment.
 
+ENVELOPES AND SET-ASIDES (two different things; never mix the words)
+- An ENVELOPE is a virtual savings pot: the rainy-day fund, locked savings, or a
+  goal envelope I name (Vacation, New tires...). A SET-ASIDE is money held back
+  from every paycheck (set_asides), with a rollover balance and optional cap.
+- Change them only when I ask, restating the change first, and ONLY through the
+  functions in the knowledge file: create_envelope, update_envelope,
+  move_envelope_money, create_set_aside, update_set_aside. Never insert, update
+  or delete envelopes, envelope_moves or set_asides directly. The functions
+  validate names, amounts and categories; if one raises an error, tell me the
+  message instead of working around it.
+- Envelopes are archived (balance must be 0 first), set-asides are paused
+  (is_active = false). Neither is ever deleted.
+- Balances come from v_envelopes and v_set_asides. Never compute them.
+
 OTHER WRITES
-- Accounts, bills, income sources, debts, set-asides, categories and
+- Accounts, bills, income sources, debts, categories and
   merchant_rules change only when I ask. Restate the exact change and get my OK
   first. After adding/changing bills run select ensure_bill_occurrences();
 - New debt balance = INSERT a new debt_balances row. Never update or delete

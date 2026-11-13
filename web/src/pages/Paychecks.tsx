@@ -10,7 +10,6 @@ import type {
   PaycheckSetAsideItem,
   VPayPeriod,
   VPayPeriodForecast,
-  VSetAside,
 } from "../types/db";
 import {
   formatCount,
@@ -23,6 +22,7 @@ import { Icon } from "../components/Icon";
 import { cx } from "../lib/cx";
 import { QueryState } from "../components/QueryState";
 import { billStatusBadge } from "../components/billStatus";
+import { SetAsidesSection } from "../components/SetAsidesSection";
 
 export default function Paychecks() {
   const { version } = useEntry();
@@ -31,9 +31,6 @@ export default function Paychecks() {
   );
   const forecast = useView<VPayPeriodForecast>(`v_pay_period_forecast:${version}`, (sb) =>
     sb.from("v_pay_period_forecast").select("*").order("period_index"),
-  );
-  const setAsides = useView<VSetAside>(`v_set_asides:${version}`, (sb) =>
-    sb.from("v_set_asides").select("*").eq("is_active", true).order("name"),
   );
   // Join on period_start (lookup only, no arithmetic). Missing forecast rows simply hide the forecast box.
   const forecastByStart = new Map(
@@ -46,9 +43,7 @@ export default function Paychecks() {
         title="Paychecks"
         description="What each paycheck has to cover, and how much to hold back so short paychecks and bill clusters are covered."
       />
-      {setAsides.data && setAsides.data.length > 0 ? (
-        <SetAsidePanel rows={setAsides.data} />
-      ) : null}
+      <SetAsidesSection />
       <QueryState
         state={periods}
         label="pay periods"
@@ -80,68 +75,6 @@ export default function Paychecks() {
         }}
       </QueryState>
     </>
-  );
-}
-
-function SetAsidePanel({ rows }: { rows: VSetAside[] }) {
-  return (
-    <section
-      aria-label="Set-aside balances"
-      className="mb-4 rounded-2xl border border-line bg-surface p-4 sm:p-5"
-    >
-      <h2 className="text-sm font-semibold text-ink">Set-asides</h2>
-      <p className="mt-0.5 text-xs text-muted">
-        Money held back each paycheck. Balances roll over, up to the cap, and
-        spending in the linked category draws them down.
-      </p>
-      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-        {rows.map((r) => {
-          const pct =
-            r.cap && r.cap > 0
-              ? Math.min(Math.max(r.balance / r.cap, 0), 1)
-              : null;
-          return (
-            <li
-              key={r.id}
-              className="rounded-xl border border-line bg-surface-2 p-3"
-            >
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="min-w-0 truncate text-sm font-medium text-ink">
-                  {r.name}
-                </span>
-                <span
-                  className={cx(
-                    "text-base font-semibold tabular-nums",
-                    r.balance < 0 ? "text-danger" : "text-ink",
-                  )}
-                >
-                  <Money value={r.balance} />
-                </span>
-              </div>
-              {pct !== null ? (
-                <div
-                  className="mt-2 h-1.5 overflow-hidden rounded-full bg-line"
-                  role="img"
-                  aria-label={`${Math.round(pct * 100)}% of cap`}
-                >
-                  <div
-                    className="h-full rounded-full bg-accent"
-                    style={{ width: `${pct * 100}%` }}
-                  />
-                </div>
-              ) : null}
-              <p className="mt-1.5 text-xs text-muted">
-                {formatCurrency(r.per_paycheck)} per paycheck
-                {r.cap !== null
-                  ? ` · cap ${formatCurrency(r.cap)}${r.at_cap ? " (full)" : ""}`
-                  : " · no cap"}
-                {r.category_name ? ` · draws from ${r.category_name}` : ""}
-              </p>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
   );
 }
 

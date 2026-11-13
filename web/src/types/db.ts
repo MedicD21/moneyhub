@@ -457,9 +457,11 @@ export type VSetAside = {
   current_contribution: number;
   room_left: number | null;
   at_cap: boolean;
+  opening_balance: number;
 };
 
-export type EnvelopeKind = 'rainy_day' | 'locked_savings';
+/** rainy_day and locked_savings: one each, fixed. goal: user-named pots (create_envelope), any number. */
+export type EnvelopeKind = 'rainy_day' | 'locked_savings' | 'goal';
 
 /** public.v_envelopes (20261113000000). Virtual savings: no real money moves. */
 export type VEnvelope = {
@@ -470,6 +472,7 @@ export type VEnvelope = {
   balance: number;
   last_move_date: IsoDate | null;
   move_count: number;
+  created_at: IsoTimestamp;
 };
 
 /** public.v_envelope_moves: positive = set aside into the envelope, negative = moved back to spendable cash. */
@@ -585,6 +588,15 @@ export type ManualTransactionArgs = {
 };
 
 /** Arguments of public.update_manual_transaction (the account cannot be changed). */
+export type SetAsideArgs = {
+  p_name: string;
+  p_per_paycheck: number;
+  p_cap: number | null;
+  p_start_date: IsoDate;
+  p_opening_balance: number;
+  p_category_id: Uuid | null;
+};
+
 export type ManualTransactionUpdateArgs = Omit<ManualTransactionArgs, 'p_account_id'> & { p_id: Uuid };
 
 type NoWrite = { [_ in never]: never };
@@ -638,6 +650,10 @@ export type Database = {
         Args: { p_envelope_id: Uuid; p_amount: number; p_note?: string | null; p_move_date?: IsoDate | null };
         Returns: number;
       };
+      create_envelope: { Args: { p_name: string }; Returns: Uuid };
+      update_envelope: { Args: { p_id: Uuid; p_name: string; p_is_active: boolean }; Returns: Uuid };
+      create_set_aside: { Args: SetAsideArgs; Returns: Uuid };
+      update_set_aside: { Args: SetAsideArgs & { p_id: Uuid; p_is_active: boolean }; Returns: Uuid };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

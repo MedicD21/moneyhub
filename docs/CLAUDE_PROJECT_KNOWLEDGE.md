@@ -25,8 +25,8 @@ escaping: `$j$[ ... ]$j$::jsonb`.
 | `bill_occurrences` | bill_id, due_date, expected_amount, paid_amount, paid_date, status (`due`/`paid`/`partial`/`skipped`), transaction_id | created by `ensure_bill_occurrences()` (daily cron) |
 | `debts` | name, kind, account_id (if a tracked card/loan account), apr (24.990 = 24.99%), min_payment, due_day, credit_limit, promo_apr, promo_ends | min_payment changes flow to the linked bill's amount |
 | `debt_balances` | debt_id, as_of_date, balance (owed, positive), import_batch_id | insert only, never overwrite |
-| `set_asides` | name, per_paycheck, cap, start_date, opening_balance, category_id, is_active | Rollover set-aside (not an envelope): +per_paycheck each payday (stops at cap; null cap = unlimited). Spending draws it down when `transactions.set_aside_id` is set, or (untagged) the txn's category = `category_id`. Balance is derived, never stored. Drawn spending is not counted as discretionary |
-| `envelopes`, `envelope_moves` | kind (`rainy_day`/`locked_savings`), name, is_active; moves: envelope_id, move_date, amount (+ in, − out), note | "Envelope" means only these two. Virtual: no real money moves. Moves come from the web app (`move_envelope_money`), which refuses a move in that would make envelopes plus set-aside balances exceed real cash. The forecast subtracts both from starting cash |
+| `set_asides` | name, per_paycheck, cap, start_date, opening_balance, category_id, is_active | Rollover set-aside (not an envelope). Write only through `create_set_aside` / `update_set_aside` (templates below); pause, never delete: +per_paycheck each payday (stops at cap; null cap = unlimited). Spending draws it down when `transactions.set_aside_id` is set, or (untagged) the txn's category = `category_id`. Balance is derived, never stored. Drawn spending is not counted as discretionary |
+| `envelopes`, `envelope_moves` | kind (`rainy_day`/`locked_savings`/`goal`), name, is_active; moves: envelope_id, move_date, amount (+ in, − out), note | "Envelope" means only these virtual savings pots: the rainy-day fund, locked savings, and goal envelopes (user-named, any number). Not set-asides. No real money moves. Write only through functions: `create_envelope(name)`, `update_envelope(id, name, is_active)` (goal only; archive needs balance 0), `move_envelope_money(envelope_id, amount, note)` (refuses a move in that would make envelopes plus set-aside balances exceed real cash). The forecast subtracts every active envelope from starting cash; only the rainy-day fund is ever suggested as a draw |
 | `debt_plans` | name, strategy, extra_monthly, assumptions, summary, schedule, balances_as_of, is_active | only one active |
 | `app_settings` | owner_id, timezone, low_balance_threshold, stale_after_days | one row |
 
@@ -148,10 +148,14 @@ values ('Visa', 'credit_card', (select id from accounts where name = 'Visa'), 24
 insert into debt_balances (debt_id, as_of_date, balance)
 values ((select id from debts where name = 'Visa'), '2026-03-01', 1840.66);
 
-insert into set_asides (name, per_paycheck) values ('Christmas gifts', 40);
+-- Set-asides: always through these functions (they validate; never insert/update set_asides directly).
+-- create_set_aside(name, per_paycheck, cap, start_date, opening_balance, category_id); nulls = no cap / today / 0 / none
+select public.create_set_aside('Christmas gifts', 40);
 -- Rollover set-aside with a cap, drawing from a category:
-insert into set_asides (name, per_paycheck, cap, category_id)
-values ('Car & fuel', 50, 350, (select id from categories where name = 'Gas'));
+select public.create_set_aside('Car & fuel', 50, 350, null, 0, (select id from categories where name = 'Gas'));
+-- Edit or pause (pass every field; is_active false = paused, never delete):
+select public.update_set_aside(sa.id, sa.name, 60, sa.cap, sa.start_date, sa.opening_balance, sa.category_id, true)
+  from set_asides sa where sa.name = 'Car & fuel';
 -- Tag one-off spending to a set-aside:
 update transactions set set_aside_id = (select id from set_asides where name = 'Car & fuel') where id = '...';
 ```

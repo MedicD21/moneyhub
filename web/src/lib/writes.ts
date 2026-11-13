@@ -1,11 +1,13 @@
 /**
  * The web app's only write path (and the only file allowed to call database functions; see tests/readonly-guard.test.ts
  * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of five
- * narrow, owner-checked SECURITY DEFINER functions from 20261113000000_manual_entry_and_envelopes.sql:
+ * nine narrow, owner-checked SECURITY DEFINER functions:
  *
- *   add_manual_transaction / update_manual_transaction / delete_manual_transaction
- *   set_transaction_cleared
- *   move_envelope_money
+ *   add_manual_transaction / update_manual_transaction / delete_manual_transaction   (20261113000000)
+ *   set_transaction_cleared                                                           (20261113000000)
+ *   move_envelope_money                                                               (20261113030000)
+ *   create_envelope / update_envelope                                                 (20261113040000)
+ *   create_set_aside / update_set_aside                                               (20261113050000)
  *
  * None of them can set `reconciled`; only Claude can (a trigger blocks it for any web session). The database
  * validates every argument again, so the checks here only exist to give friendlier messages.
@@ -13,7 +15,7 @@
  * Each call resolves to a result object and never throws, so forms can show the message inline.
  */
 import { supabase } from './supabase';
-import type { IsoDate, Uuid } from '../types/db';
+import type { IsoDate, SetAsideArgs, Uuid } from '../types/db';
 
 export type WriteResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -141,6 +143,78 @@ export async function moveEnvelopeMoney(
     });
     if (error) return fail(error);
     return { ok: true, data };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+/** Create a goal envelope (a user-named savings pot). It starts at $0. Resolves to the new id. */
+export async function createEnvelope(name: string): Promise<WriteResult<Uuid>> {
+  if (!supabase) return NO_CLIENT;
+  if (!name.trim()) return { ok: false, error: 'Enter a name.' };
+  try {
+    const { data, error } = await supabase.rpc('create_envelope', { p_name: name });
+    if (error) return fail(error);
+    return { ok: true, data };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+/** Rename, archive (isActive false; the balance must be $0) or restore a goal envelope. */
+export async function updateEnvelope(id: Uuid, name: string, isActive: boolean): Promise<WriteResult> {
+  if (!supabase) return NO_CLIENT;
+  if (!name.trim()) return { ok: false, error: 'Enter a name.' };
+  try {
+    const { error } = await supabase.rpc('update_envelope', { p_id: id, p_name: name, p_is_active: isActive });
+    if (error) return fail(error);
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+export type SetAsideInput = {
+  name: string;
+  perPaycheck: number;
+  cap: number | null;
+  startDate: IsoDate;
+  openingBalance: number;
+  categoryId: Uuid | null;
+};
+
+function setAsideArgs(input: SetAsideInput): SetAsideArgs {
+  return {
+    p_name: input.name,
+    p_per_paycheck: input.perPaycheck,
+    p_cap: input.cap,
+    p_start_date: input.startDate,
+    p_opening_balance: input.openingBalance,
+    p_category_id: input.categoryId,
+  };
+}
+
+/** Create an active set-aside (a per-paycheck reservation). Resolves to the new id. */
+export async function createSetAside(input: SetAsideInput): Promise<WriteResult<Uuid>> {
+  if (!supabase) return NO_CLIENT;
+  if (!input.name.trim()) return { ok: false, error: 'Enter a name.' };
+  try {
+    const { data, error } = await supabase.rpc('create_set_aside', setAsideArgs(input));
+    if (error) return fail(error);
+    return { ok: true, data };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+/** Edit a set-aside, or pause (isActive false) / resume it. Set-asides are never deleted. */
+export async function updateSetAside(id: Uuid, input: SetAsideInput, isActive: boolean): Promise<WriteResult> {
+  if (!supabase) return NO_CLIENT;
+  if (!input.name.trim()) return { ok: false, error: 'Enter a name.' };
+  try {
+    const { error } = await supabase.rpc('update_set_aside', { ...setAsideArgs(input), p_id: id, p_is_active: isActive });
+    if (error) return fail(error);
+    return { ok: true, data: undefined };
   } catch (e) {
     return networkFail(e);
   }

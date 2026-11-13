@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amountToInputText, parseAmountCents, sanitizeAmountInput, signedDollars } from './money';
+import { amountToInputText, centsToDollars, parseAmountCents, parseCentsAllowZero, sanitizeAmountInput, signedDollars } from './money';
 
 describe('sanitizeAmountInput', () => {
   it('keeps digits and one decimal point', () => {
@@ -72,5 +72,30 @@ describe('amountToInputText', () => {
     expect(amountToInputText(250)).toBe('250.00');
     expect(amountToInputText(-0.5)).toBe('0.50');
     expect(amountToInputText(-12.34)).toBe('12.34');
+  });
+});
+
+describe('parseCentsAllowZero', () => {
+  it('accepts zero, unlike parseAmountCents', () => {
+    expect(parseCentsAllowZero('0')).toBe(0);
+    expect(parseCentsAllowZero('0.00')).toBe(0);
+    expect(parseAmountCents('0')).toBeNull();
+  });
+  it('parses the same shapes as parseAmountCents', () => {
+    expect(parseCentsAllowZero('12.3')).toBe(1230);
+    expect(parseCentsAllowZero('.5')).toBe(50);
+  });
+  it('rejects empty and malformed text', () => {
+    expect(parseCentsAllowZero('')).toBeNull();
+    expect(parseCentsAllowZero('.')).toBeNull();
+    expect(parseCentsAllowZero('1.234')).toBeNull();
+    expect(parseCentsAllowZero('-1')).toBeNull();
+  });
+});
+
+describe('centsToDollars', () => {
+  it('converts integer cents to the dollar number sent to the database', () => {
+    expect(centsToDollars(1230)).toBe(12.3);
+    expect(centsToDollars(0)).toBe(0);
   });
 });
