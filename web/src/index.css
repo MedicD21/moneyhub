@@ -387,7 +387,8 @@ select option { background: var(--surface-solid); color: var(--text); }
    instead, and entrances drop the blur and keep the fade and lift. Short panels keep the frost. */
 @media (hover: none) {
   .rise { animation-name: rise-lite; }
-  details.glass[open] {
+  details.glass[open],
+  .glass:has(details[open]) {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background: linear-gradient(180deg, var(--glass-hi), var(--glass-lo)), color-mix(in oklab, var(--surface-solid) 94%, transparent);

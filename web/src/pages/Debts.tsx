@@ -285,6 +285,11 @@ function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorF
     <div className="grid gap-4 md:grid-cols-2">
       {entries.map(([debtId, g], i) => {
         const color = colorFor(debtId, i);
+        // All points on one date (common: several balances recorded the same day) make a
+        // zero-width time axis, and Recharts then stacks duplicate ticks on that one spot.
+        // Pad the axis a day either side and show the single date once. Date padding only.
+        const xs = g.points.map((p) => p.x);
+        const oneDay = Math.min(...xs) === Math.max(...xs) ? xs[0] : undefined;
         return (
           <ChartFrame
             key={debtId}
@@ -305,7 +310,8 @@ function HistoryCharts({ rows, colorFor }: { rows: VDebtBalanceHistory[]; colorF
                     dataKey="x"
                     type="number"
                     scale="time"
-                    domain={['dataMin', 'dataMax']}
+                    domain={oneDay !== undefined ? [oneDay - 1, oneDay + 1] : ['dataMin', 'dataMax']}
+                    ticks={oneDay !== undefined ? [oneDay] : undefined}
                     tickFormatter={(x: number) => formatDate(dayNumberToIso(x), 'short')}
                     tick={axisTick}
                     axisLine={axisLine}
