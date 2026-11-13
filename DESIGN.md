@@ -1,63 +1,73 @@
 ---
 name: Money Hub
-description: Personal paycheck-based budget viewer; database-computed numbers, shown plainly.
+description: A night instrument cluster of smoked glass with lit pine seams, over database-computed money figures. Dark only.
 colors:
-  deep-pine: "#1f6f54"
-  deep-pine-ink: "#ffffff"
-  deep-pine-soft: "#e3f1ec"
-  deep-pine-dark: "#5fc3a0"
-  deep-pine-ink-dark: "#0b1f18"
-  deep-pine-soft-dark: "#173229"
-  ledger-paper: "#f7f7f5"
-  ledger-sheet: "#ffffff"
-  ledger-tint: "#f0efec"
-  ledger-rule: "#e1e0d9"
-  ink: "#161615"
-  ink-muted: "#5c5b57"
-  ink-subtle: "#7a7973"
-  dusk-paper: "#121211"
-  dusk-sheet: "#1b1b1a"
-  dusk-tint: "#252523"
-  dusk-rule: "#33332f"
-  dusk-ink: "#f0efec"
-  dusk-ink-muted: "#b9b8ae"
-  dusk-ink-subtle: "#9a998f"
-  money-in: "#006300"
-  money-in-dark: "#4cc24c"
-  ok-wash: "#e7f4e7"
-  ok-rule: "#9fd19f"
-  caution: "#8a5300"
-  caution-wash: "#fdf3dc"
-  caution-rule: "#f0c46b"
-  overdue: "#b42318"
-  overdue-wash: "#fdecea"
-  overdue-rule: "#f1a7a0"
-  overdue-dark: "#f28b82"
+  ground: "#050807"
+  ground-deep: "#020403"
+  glass-fill: "rgba(15, 21, 20, 0.6)"
+  glass-solid: "#0d1312"
+  glass-wash: "rgba(255, 255, 255, 0.05)"
+  edge: "rgba(255, 255, 255, 0.085)"
+  edge-strong: "rgba(255, 255, 255, 0.15)"
+  bevel: "rgba(255, 255, 255, 0.09)"
+  ink: "#eef4f1"
+  ink-muted: "#a5b2ad"
+  ink-subtle: "#7d8a85"
+  pine: "#5fc3a0"
+  pine-bright: "#8be7c5"
+  pine-deep: "#2f8a6b"
+  pine-ink: "#03140d"
+  pine-wash: "rgba(95, 195, 160, 0.14)"
+  seam-light: "rgba(139, 231, 197, 0.75)"
+  field-pine: "rgba(47, 138, 107, 0.42)"
+  field-teal: "rgba(25, 158, 112, 0.24)"
+  field-cold-blue: "rgba(57, 135, 229, 0.2)"
+  money-in: "#1fb380"
+  money-in-wash: "rgba(31, 179, 128, 0.12)"
+  money-in-line: "rgba(31, 179, 128, 0.4)"
+  caution: "#f5c15a"
+  caution-wash: "rgba(245, 193, 90, 0.1)"
+  caution-line: "rgba(245, 193, 90, 0.38)"
+  alarm: "#f28b82"
+  alarm-wash: "rgba(242, 139, 130, 0.1)"
+  alarm-line: "rgba(242, 139, 130, 0.4)"
+  spending-ember: "#e2652f"
+  chart-grid: "rgba(255, 255, 255, 0.08)"
+  chart-axis: "rgba(255, 255, 255, 0.18)"
+  series-1: "#3987e5"
+  series-2: "#d95926"
+  series-3: "#199e70"
+  series-4: "#c98500"
+  series-5: "#d55181"
+  series-6: "#008300"
+  series-7: "#9085e9"
+  series-8: "#e66767"
 typography:
   display:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "2.25rem"
     fontWeight: 600
     lineHeight: 1.1
-    fontFeature: "tnum"
+    letterSpacing: "-0.025em"
+    fontFeature: "'tnum' 1, 'case' 1"
   headline:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.5rem"
+    fontSize: "1.75rem"
     fontWeight: 600
-    lineHeight: 1.33
+    lineHeight: 1.25
     letterSpacing: "-0.025em"
-  stat:
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
-    fontSize: "1.875rem"
-    fontWeight: 600
-    lineHeight: 1.2
-    letterSpacing: "-0.025em"
-    fontFeature: "tnum"
   title:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "0.875rem"
     fontWeight: 600
-    lineHeight: 1.43
+    lineHeight: 1.25
+    letterSpacing: "-0.025em"
+  figure:
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 600
+    lineHeight: 1.4
+    fontFeature: "'tnum' 1, 'case' 1"
   body:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "0.875rem"
@@ -72,237 +82,284 @@ typography:
     fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif"
     fontSize: "11px"
     fontWeight: 500
-    lineHeight: 1rem
+    lineHeight: 1.45
 rounded:
-  md: "8px"
-  lg: "12px"
-  xl: "16px"
-  full: "9999px"
+  chip: "10px"
+  control: "12px"
+  plate: "14px"
+  banner: "16px"
+  panel: "20px"
+  dock: "22px"
+  rail: "24px"
+  pill: "9999px"
 spacing:
-  xs: "4px"
-  sm: "8px"
-  md: "12px"
-  lg: "16px"
-  xl: "20px"
+  gutter-phone: "16px"
+  gutter-tablet: "24px"
+  gutter-desktop: "40px"
+  panel-pad: "16px"
+  panel-pad-wide: "20px"
+  grid-gap: "16px"
+  control-pad-x: "14px"
 components:
   button-primary:
-    backgroundColor: "{colors.deep-pine}"
-    textColor: "{colors.deep-pine-ink}"
+    backgroundColor: "{colors.pine}"
+    textColor: "{colors.pine-ink}"
+    rounded: "{rounded.control}"
+    padding: "0 14px"
+    height: "40px"
     typography: "{typography.title}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
-    height: "40px"
   button-secondary:
-    backgroundColor: "{colors.ledger-sheet}"
+    backgroundColor: "{colors.glass-wash}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
+    rounded: "{rounded.control}"
+    padding: "0 14px"
     height: "40px"
-  button-secondary-hover:
-    backgroundColor: "{colors.ledger-tint}"
   button-ghost:
     textColor: "{colors.ink-muted}"
-    rounded: "{rounded.md}"
-    padding: "0 12px"
+    rounded: "{rounded.control}"
+    padding: "0 14px"
     height: "40px"
-  button-ghost-hover:
-    backgroundColor: "{colors.ledger-tint}"
+  button-add-orb:
+    backgroundColor: "{colors.pine}"
+    textColor: "{colors.pine-ink}"
+    rounded: "{rounded.pill}"
+    size: "56px"
+  panel-glass:
+    backgroundColor: "{colors.glass-fill}"
     textColor: "{colors.ink}"
-  input:
-    backgroundColor: "{colors.ledger-sheet}"
+    rounded: "{rounded.panel}"
+    padding: "16px"
+  input-well:
+    backgroundColor: "rgba(0, 0, 0, 0.32)"
     textColor: "{colors.ink}"
-    typography: "{typography.body}"
-    rounded: "{rounded.md}"
+    rounded: "{rounded.control}"
     padding: "0 12px"
     height: "44px"
-  card:
-    backgroundColor: "{colors.ledger-sheet}"
-    rounded: "{rounded.xl}"
-    padding: "16px"
+  chip-icon:
+    backgroundColor: "{colors.pine-wash}"
+    textColor: "{colors.pine-bright}"
+    rounded: "{rounded.chip}"
+    size: "32px"
   badge-ok:
-    backgroundColor: "{colors.ok-wash}"
+    backgroundColor: "{colors.money-in-wash}"
     textColor: "{colors.money-in}"
-    typography: "{typography.micro}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.pill}"
     padding: "2px 8px"
-  badge-warn:
+    typography: "{typography.micro}"
+  badge-caution:
     backgroundColor: "{colors.caution-wash}"
     textColor: "{colors.caution}"
-    typography: "{typography.micro}"
-    rounded: "{rounded.full}"
+    rounded: "{rounded.pill}"
     padding: "2px 8px"
-  badge-danger:
-    backgroundColor: "{colors.overdue-wash}"
-    textColor: "{colors.overdue}"
     typography: "{typography.micro}"
-    rounded: "{rounded.full}"
+  badge-alarm:
+    backgroundColor: "{colors.alarm-wash}"
+    textColor: "{colors.alarm}"
+    rounded: "{rounded.pill}"
     padding: "2px 8px"
-  nav-item-active:
-    backgroundColor: "{colors.deep-pine-soft}"
+    typography: "{typography.micro}"
+  badge-neutral:
+    backgroundColor: "{colors.glass-wash}"
     textColor: "{colors.ink}"
-    rounded: "{rounded.md}"
-    height: "40px"
-  fab-add:
-    backgroundColor: "{colors.deep-pine}"
-    textColor: "{colors.deep-pine-ink}"
-    rounded: "{rounded.full}"
-    size: "56px"
+    rounded: "{rounded.pill}"
+    padding: "2px 8px"
+    typography: "{typography.micro}"
+  nav-item:
+    textColor: "{colors.ink-muted}"
+    rounded: "{rounded.control}"
+    padding: "0 12px"
+    height: "44px"
+  nav-item-active:
+    backgroundColor: "{colors.pine-wash}"
+    textColor: "{colors.ink}"
+    rounded: "{rounded.control}"
+    padding: "0 12px"
+    height: "44px"
+  chart-plate:
+    rounded: "{rounded.plate}"
+    padding: "12px 6px 4px"
+  meter-track:
+    backgroundColor: "rgba(0, 0, 0, 0.4)"
+    rounded: "{rounded.pill}"
+    height: "6px"
 ---
 
 # Design System: Money Hub
 
 ## Overview
 
-**Creative North Star: "The Ledger at Dusk"**
+**Creative North Star: "The Night Instrument Cluster"**
 
-Money Hub is a bookkeeper's ledger read under a lamp. Warm paper in daylight, warm near-black at night, and figures that sit still on the page. The interface does no persuading: it lays out what the database computed, in a fixed order, so the eye goes to the number and then to what's due next.
+Money Hub is a dashboard you read in the dark: smoked glass panels floating over a near-black ground, with pine light leaking from behind them and running along their top edges. The light source is always pine. It drifts in slow fields behind the glass, travels each panel's seam, lights the active nav item, glides under the dock tab, and pools brightest behind the one number that matters on a screen: Safe-to-spend. Everything else sits one step dimmer.
 
-Components are crisp and utilitarian. Hairline rules separate things, one deep pine accent marks the single thing you can act on, and status color (in, caution, overdue) is the only other color allowed to speak. Density is moderate: phone-first stacks of cards, small labels over large tabular figures, and 40px minimum touch targets. Dusk (dark mode) is a peer of daylight, not an inversion: every token has a tuned dark value.
+The world is dense but quiet. Panels are frosted and beveled, edges are 1px white-alpha lines, and color is rationed: status hues (green, amber, coral) glow only where they carry meaning, and money out is never painted red. Figures are system sans with tabular digits, so columns of money align digit for digit and nothing pretends to be a display face. Motion is maximal (seams travel, halos turn, fields drift, panels rise into place), and all of it stops under Reduce Motion without hiding a single figure.
+
+This replaces the earlier light/dark "Ledger at Dusk" system entirely. There is no light theme. The flat, light admin card grid is the explicit rejection.
 
 **Key Characteristics:**
-- Warm neutral paper and ink in both themes, never pure white-on-black or blue-gray.
-- One accent, Deep Pine, for primary actions, the active nav item and focus rings.
-- Tabular figures everywhere money appears.
-- Flat surfaces; a near-invisible shadow on cards, real shadow only on things that float.
-- System font stack; hierarchy comes from size and weight, not typeface.
+- Dark only; one material (smoked glass), one light source (pine).
+- A single lit hero figure per screen: Safe-to-spend, in a reticle over a beacon.
+- Green means money in. Red means overdue, shortfall or error. Spending is orange.
+- System sans, tabular figures, tight tracking on headings.
+- Maximal ambient and arrival motion, transform-only where it loops, fully off under Reduce Motion.
+- HUD instrumentation for data: chart plates with corner brackets, lit gradients, readout tooltips, lit meters.
 
 ## Colors
 
-A warm-neutral ledger palette with one evergreen accent and three status signals. Every role has a light (Ledger) and dark (Dusk) value, switched by `prefers-color-scheme` through CSS custom properties in `web/src/index.css`.
+A near-black pine-tinted ground, translucent glass over it, one pine light, and three status hues used sparingly.
 
 ### Primary
-- **Deep Pine** (light `deep-pine`, dark `deep-pine-dark`): primary buttons, the + add button, the active bottom-tab label, accent card borders and every focus ring. Text on it uses `deep-pine-ink` / `deep-pine-ink-dark`.
-- **Pine Wash** (`deep-pine-soft` / `deep-pine-soft-dark`): the active sidebar item and accent badges. A selected state, never a decorative fill.
+- **Pine Light** (pine): the accent and light source. Primary buttons, the add orb, icon chips by default, focus outlines, checkbox accent, meter fills, the page-title rule.
+- **Seam Pine** (pine-bright): the brightest pine. Seams, the active nav dot and dock indicator, reticle ring, halo ring, focused field edge, caret. Used as light, rarely as a fill.
+- **Deep Pine** (pine-deep): the shaded end of lit gradients (primary button, orb).
+- **Pine Ink** (pine-ink): text and icons on lit pine surfaces.
+- **Pine Wash** (pine-wash): tinted backgrounds for the accent badge and active nav.
+
+### Secondary
+- **Money-In Green** (money-in): the one green. Money in, positive amounts, income series in charts, the next paycheck figure, ok badges. Also exposed as `--income`.
+- **Spending Ember** (spending-ember): the spending series in charts. Orange, never red.
+
+### Tertiary
+- **Caution Amber** (caution): stale data, review queues, needs-attention states.
+- **Alarm Coral** (alarm): overdue bills, shortfall and overspent states, low balances, errors. Its wash and line tokens tint danger panels, badges and banners.
+- **Cold Blue Field** (field-cold-blue, series-1): a counter-light. One ambient field and the far arc of the reticle and halo rings.
 
 ### Neutral
-- **Ledger Paper / Dusk Paper** (`ledger-paper` / `dusk-paper`): page background.
-- **Ledger Sheet / Dusk Sheet** (`ledger-sheet` / `dusk-sheet`): cards, sheets, inputs, sidebar and bars.
-- **Ledger Tint / Dusk Tint** (`ledger-tint` / `dusk-tint`): hover fills, segmented-control tracks, the amount field well, neutral badges.
-- **Ledger Rule / Dusk Rule** (`ledger-rule` / `dusk-rule`): every border and divider; also the chart grid.
-- **Ink / Dusk Ink** (`ink` / `dusk-ink`): headings, values, primary text.
-- **Muted Ink** (`ink-muted` / `dusk-ink-muted`): labels, descriptions, inactive nav, axis ticks.
-- **Subtle Ink** (`ink-subtle` / `dusk-ink-subtle`): placeholders and chart overflow series only.
-
-### Status
-- **Money In** (`money-in` / `money-in-dark`): positive amounts (with a leading +) and "ok" badges. Money out stays neutral ink.
-- **Caution** (`caution`, with `caution-wash` and `caution-rule`): warning banners and badges, such as due-soon bills.
-- **Overdue** (`overdue` / `overdue-dark`, with `overdue-wash` and `overdue-rule`): danger banners, badges, danger-toned stats and card borders.
-
-### Charts
-Charts use a separate eight-step categorical palette (`--series-1` to `--series-8`, light and dark steps) plus `--income` and `--spending`, defined in `web/src/index.css` and applied through `web/src/components/chartTheme.ts`. Order is fixed; past eight series fall back to Subtle Ink. These colors live only inside charts.
+- **Night Ground** (ground → ground-deep): the page, painted only on `<html>` so the ambient layer shows through.
+- **Smoked Glass** (glass-fill, glass-solid): panel fill at 60% over a 20px blur; the solid variant for the brand mark tile, native options, skip link.
+- **Glass Wash** (glass-wash): hover rows, neutral badges, secondary buttons.
+- **Edge / Edge Strong** (edge, edge-strong): 1px panel and control borders; strong on hover and on readouts.
+- **Ink / Muted / Subtle** (ink, ink-muted, ink-subtle): figures and titles; labels and secondary copy; placeholders and quiet metadata.
+- **Chart grid and axis** (chart-grid, chart-axis): dotted HUD grid (`2 5` dash) and axis lines.
+- **Categorical series** (series-1 … series-8): validated palette, fixed order, never cycled; a ninth series falls back to ink-subtle.
 
 ### Named Rules
-**The Neutral Spend Rule.** Money out is never red. Red means overdue or an error, not "you spent money". Only money in gets color.
+**The One Green Rule.** Money-In Green is the only green that carries meaning, and it means money in. Money out stays neutral ink. Red never marks an ordinary outflow; it is reserved for overdue, shortfall, overspent and error states.
 
-**The One Pine Rule.** Deep Pine marks what you can act on or where you are. It is never a background for content or a decorative stripe.
+**The Ember Series Rule.** Spending in charts is Spending Ember (orange), paired against Money-In Green income. A red spending series is wrong.
 
-**The Dusk Parity Rule.** No color ships without its dark value. Add new colors as CSS custom properties with both steps, never as raw hex in a component.
+**The Status-When-Active Rule.** Icon chips are pine (or muted neutral) at rest and take caution or alarm hue only while that status is actually active (an overdue count above zero, items to review). A chip that is amber or coral with nothing wrong is lying.
+
+**The Glow-Means-Meaning Rule.** Status hues glow (badge glow, tinted seams, danger beacon) only where they carry a state. Decoration glows pine.
 
 ## Typography
 
-**Display Font:** system-ui (with -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial)
-**Body Font:** same stack
-**Label/Mono Font:** none; numbers use `tabular-nums` on the same stack
+**Display Font:** system-ui (with -apple-system, Segoe UI, Roboto, Helvetica Neue, Arial, sans-serif)
+**Body Font:** the same system stack
+**Label/Mono Font:** none; figures use the system sans with tabular and case-sensitive features (`'tnum' 1, 'case' 1`).
 
-**Character:** The platform's own face, so the app reads like a native tool on the phone. Weight 600 and tight tracking carry headings; everything else is 400–500.
+**Character:** Plain, native and exact. The glass and light carry the atmosphere; the type stays out of the way so money reads instantly. A custom display face was considered and deliberately not adopted.
 
 ### Hierarchy
-- **Display** (600, 2.25rem, 1.1, tabular): the amount being typed in the add/edit sheet.
-- **Stat** (600, 1.875rem emphasized / 1.25rem normal, tight tracking, tabular): headline figures such as safe-to-spend and balances.
-- **Headline** (600, 1.5rem, tight tracking): page titles, one per page.
-- **Title** (600, 0.875rem): card and sheet headings.
-- **Body** (400, 0.875rem): rows, descriptions, buttons (500).
-- **Label** (500, 0.75rem, muted): stat labels, field labels, card subtitles.
-- **Micro** (500, 11px; 10.5px in the bottom tab bar): badges and tab labels only.
+- **Display** (600, 2.25rem phone / 2.5rem sm / 3.25rem lg, 1.1, tight tracking): the hero figure only, lit with a soft text-glow of its own color. Safe-to-spend.
+- **Headline** (600, 1.75rem / 2rem sm, 1.25, tight): page titles over the drawn rule; also the unlit secondary headline figure (net position).
+- **Title** (600, 0.875rem, tight): panel titles and collapsible summaries.
+- **Figure** (600, 1.25rem, tabular): ordinary stats in tiles.
+- **Body** (400, 0.875rem): rows, descriptions, banner copy. Row values are tabular and right-aligned.
+- **Label** (500, 0.75rem, muted): stat labels, field labels, subtitles, legends, chart ticks (11px).
+- **Micro** (500, 11px; dock labels 10.5px): badges and dock tab names.
 
 ### Named Rules
-**The Tabular Rule.** Every money value renders with tabular figures, so columns of amounts align digit for digit.
+**The Tabular Rule.** Every money figure and count uses tabular figures so digits align in columns and figures never jitter when values change.
 
-**The 16px Input Rule.** Inputs are 1rem on phones (0.875rem from `sm` up) so iOS Safari never zooms on focus.
+**The No Count-Up Rule.** Figures arrive with a blur-and-tracking settle (`figure-in`), never with counting or interpolated values. The number on screen is always the database's number.
 
 ## Layout
 
-Phone first. Below `md` (768px): a sticky top bar with the brand, a fixed six-tab bottom bar (56px tall, safe-area padded), and a floating 56px + button above it. Both bars hide while the on-screen keyboard is open. From `md` up: a fixed 240px sidebar with full labels, and the + button moves to the bottom-right corner.
+Mobile first. On phones: a sticky glass top bar (brand + sign out), content with a 16px gutter, a floating glass dock pinned 10px above the safe-area bottom with six tabs, and the add orb floating above the dock at the right. Bottom padding on main clears dock and orb (11rem + safe area). Dock and orb hide while the on-screen keyboard is open so they never cover the field being typed in.
 
-Content sits in a centered column (max 72rem) with 16px side padding on phones, 24px from `sm`, 40px from `lg`. Page rhythm runs on a 4px base: 8–12px gaps inside cards and rows, 16px between stacked cards, 20px card padding from `sm` up (16px on phones). Definition-list rows (label left, value right, 6px vertical padding) are the default way to show a set of figures.
+From `md` (768px): a floating glass rail, 240px wide, inset 12px on all sides, replaces bar and dock; content shifts right by 16.5rem and centers at max 72rem (6xl) with 24px (sm) and 40px (lg) gutters. The orb moves to 32px from the bottom-right corner.
+
+Content is a stack of glass panels in 16px-gap grids; panels pad 16px (20px from sm). The dashboard pairs the Safe-to-spend panel with a stack of net position and four status tiles beside it. Panels stagger in (40ms steps, capped at 400ms). Touch targets are at least 40px (buttons 40px, nav items 44px, dock tabs 52px, inputs 44px on phones).
 
 ## Elevation & Depth
 
-Flat, with tonal layering. Depth comes from paper → sheet → tint steps and hairline rules, not shadow. Cards carry a barely-there 1px shadow to lift them off the paper. Real shadow is reserved for things that float above content.
+Depth is layered light and glass, not flat tone. Three planes: the animated ambient field (drifting pine, teal and cold-blue light, a slowly panning 64px grid masked to the upper center, 6% grain), the glass panels floating over it, and overlays (sheets, readouts) above. Every glass panel combines a top bevel highlight, a bottom inner shade, and a soft long drop shadow, plus a 1px lit seam on its top edge. Accent and danger panels add a colored outer bloom.
 
 ### Shadow Vocabulary
-- **Sheet rest** (`box-shadow: 0 1px 2px rgba(0,0,0,0.04)`): cards and collapsible cards.
-- **Float** (Tailwind `shadow-lg`): the + add button.
-- **Overlay** (Tailwind `shadow-xl`): the add/edit transaction sheet, over a 50% black scrim.
+- **Glass drop** (`box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.35), 0 24px 48px -28px rgba(0,0,0,0.9), 0 2px 6px -2px rgba(0,0,0,0.5)`): every glass panel, rail, bar and dock.
+- **Accent bloom** (adds `0 0 0 1px rgba(95,195,160,0.06), 0 28px 60px -30px rgba(47,138,107,0.55)`): the hero panel.
+- **Danger bloom** (adds `0 28px 60px -30px rgba(242,139,130,0.35)`): panels in an active danger state.
+- **Lit button** (`inset 0 1px 0 rgba(255,255,255,0.55), inset 0 -1px 0 rgba(0,0,0,0.2), 0 8px 22px -10px rgba(95,195,160,0.8)`): primary buttons.
+- **Well** (`inset 0 1px 2px rgba(0,0,0,0.5), inset 0 -1px 0 rgba(255,255,255,0.03)`): recessed inputs; meter tracks use `inset 0 1px 2px rgba(0,0,0,0.6)`.
+- **Plate cast** (`0 1px 1px rgba(0,0,0,0.3), 0 14px 30px -16px rgba(0,0,0,0.8)`): chart plates, lighter than glass.
 
 ### Named Rules
-**The Only-Floaters-Cast Rule.** Only elements that float over content (the + button, the sheet) get a visible shadow. Nothing in the page flow does. The one exception is HUD instrumentation (charts and meters, see Components), which carries its own bevel and lit glow.
+**The One Lit Hero Rule.** Exactly one figure per screen is lit: Safe-to-spend on the Dashboard, framed by the reticle (ring of light plus four corner brackets) over a breathing beacon. Secondary headline figures are large but unlit.
+
+**The Capped Blur Rule.** Backdrop blur never exceeds 20px (glass 20px, readout 14px, scrim 6px). Ambient motion is transform-only on a fixed layer. Both protect phone GPUs.
+
+**The Dark Only Rule.** There is one theme. `color-scheme: dark`; no light tokens, no theme switch.
 
 ## Shapes
 
-Rounded but not soft. Controls (buttons, inputs, nav items) use 8px corners; banners and segmented controls 12px; cards and the bottom sheet 16px (top corners only on phones). Badges and the + button are fully round. Every container gets a 1px rule border; focus is a 2px Deep Pine outline offset 2px (1px on inputs).
+Soft, generous corners that grow with the object: chips 10px, controls and nav items 12px, chart plates 14px, banners 16px, panels 20px, the dock 22px, the rail 24px; badges, meters and the orb are full pills/circles. Borders are 1px white-alpha; colored borders appear only on toned panels, badges and focused fields. HUD corner brackets (10px, 1.5px pine, 4px rounded corner) frame chart plates and the hero reticle. Rings of light are conic gradients masked to a thin band (1.5px for halos, 1px for the reticle), never solid outlines.
 
 ## Components
 
 ### Buttons
-Crisp and utilitarian: fixed 40px height, 12px horizontal padding, medium weight, color-only transitions.
-- **Shape:** gently rounded (8px).
-- **Primary:** Deep Pine fill, white (dark: deep-green) text. Hover drops opacity to 90%.
-- **Secondary:** sheet fill, 1px rule border, ink text; hover fills with tint.
-- **Ghost:** no fill, muted text; hover fills with tint and darkens to ink.
-- **Focus / Disabled:** 2px Deep Pine outline offset 2px; disabled at 50% opacity with a not-allowed cursor.
+Lit, tactile, and quiet everywhere except the one primary action.
+- **Shape:** gently rounded (12px), min height 40px, 14px horizontal padding, 14px medium text.
+- **Primary:** a lit pine gradient (pine-bright → pine → pine-deep) with Pine Ink text and a pine glow below. Hover brightens and passes a white sheen across; active presses 1px down.
+- **Secondary:** glass (faint white gradient, 1px edge, top bevel). Hover turns the edge pine and adds a 3px pine wash ring.
+- **Ghost:** muted text, glass wash on hover.
+- **Focus:** 2px pine-bright outline, 2px offset. **Disabled:** 45% opacity.
+- **Add orb:** a 56px pine sphere (radial light from the upper left) with a turning halo ring, breathing glow, and scale on hover/press. The one global action.
 
-### Badges
-- **Style:** fully round pill, 1px border, 11px medium text, 2px × 8px padding, no wrap.
-- **Tones:** neutral and muted (tint fill), ok (green wash), warn (caution wash), danger (overdue wash), accent (pine wash with pine border). The border always matches the tone's rule color.
+### Chips
+- **Icon chip:** a 32px (40px large) lit tile, 10px radius, tinted from its tone with an inner edge, top highlight and a glow; the icon carries a matching drop-shadow. Default tone pine; muted for neutral subjects; caution/alarm only while that status is active.
+- **Badges:** pill, 11px medium, tinted wash + line + text of their tone, with a faint glow of their own color (neutral and muted badges do not glow).
 
 ### Cards / Containers
-- **Corner Style:** 16px.
-- **Background:** sheet.
-- **Shadow Strategy:** sheet rest only (see Elevation).
-- **Border:** 1px rule; overdue rule for danger tone; Deep Pine for accent tone.
-- **Internal Padding:** 16px, 20px from `sm`.
-- **Collapsible variant:** a native `<details>` with a 48px summary row, rotating chevron, optional right-aligned tabular count; body renders only while open.
+- **Corner Style:** 20px.
+- **Background:** smoked glass (60% fill, white highlight gradient, 20px blur, 150% saturate).
+- **Shadow Strategy:** glass drop; accent or danger bloom only on toned panels (see Elevation).
+- **Border:** 1px edge; pine at 32% for accent, alarm line for danger.
+- **Seam:** a resting 1px pine line on the top edge with a brighter pulse that travels it every 7.5s, staggered per panel. Danger and warn panels tint the seam.
+- **Internal Padding:** 16px, 20px from sm. Title row: chip + title + muted subtitle, optional action on the right.
+- **Collapsible variant:** native details/summary with a 48px summary, rotating chevron tile, and a pill count; content mounts only when open.
 
 ### Inputs / Fields
-- **Style:** sheet fill, 1px rule, 8px corners, 44px tall on phones (40px from `sm`), 12px padding.
-- **Label:** 12px medium muted text stacked above.
-- **Focus:** 2px Deep Pine outline offset 1px.
-- **Money input:** `inputMode="decimal"`, centered display-size tabular figure in a tint well with a sign glyph (green for income, muted for spending).
+- **Style:** recessed wells: 32% black fill, 1px edge, inner shadow, 12px radius, 44px tall with 16px text on phones (prevents iOS zoom), 40px/14px from sm.
+- **Focus:** edge turns pine-bright, fill deepens, 3px pine ring plus a soft pine glow; no default outline.
+- **Error:** alarm text below the field with `role="alert"`.
 
 ### Navigation
-- **Sidebar (desktop):** 240px sheet panel, 40px items with 18px icon and label; active item gets Pine Wash and ink text; inactive is muted with tint hover.
-- **Bottom tabs (phone):** six equal columns, 20px icon over a 10.5px label; active turns Deep Pine, inactive muted. Envelopes is desktop-only in the bar and reached from the Dashboard on phones.
+- **Desktop rail:** floating glass column with the brand mark (halo-ringed tile) at top, 44px items in muted text with an 18px icon. Hover washes and nudges the icon right. Active item: pine-wash gradient, inner pine edge, glowing icon, and a pulsing pine dot at the right.
+- **Phone dock:** floating glass bar of six tabs (20px icon over a 10.5px label). A pine-tinted indicator glides between tabs (0.55s ease-out) with a short glowing bar of light on its top edge; the active icon glows.
 
-### Banner
-Full-width alert row: 12px corners, tone wash fill with matching rule and text color, 18px icon, bold title over body text. Info tone uses tint and ink.
+### Hero Figure (signature)
+The Stat in emphasis + reticle form: label, then the display figure in a rounded instrument window: a 1px conic ring of pine light (with a cold-blue far arc) that turns every 6s, four corner brackets, and a faint pine fill, over a breathing beacon pool behind the panel. Danger tone swaps ring and beacon to coral.
 
-### HUD Instrumentation (charts and meters, signature)
-Charts and meters are the one place the ledger turns into an instrument: ceramic plates with lit seams, in the spirit of white armor with glowing joints. Everything still comes from the existing tokens; no new hues.
-- **Plate** (`ChartFrame` in `components/charts.tsx`, `.hud-plate` in `index.css`): 14px corners, a top-lit gradient (`--plate-hi` → `--plate-lo`), an inset bevel highlight, a soft cast shadow, a 1px Deep Pine seam along the top edge, and 10px pine corner brackets. Optional caption row turns it into a `<figure>`.
-- **Series** (`components/hudDefs.tsx`): columns are lit from the left and horizontal bars from the top (highlight band, true hue, shaded edge), giving a turned, solid volume. Lines and area strokes get a soft offset glow in their own color (`--glow-mix`, stronger in Dusk). Areas fade from 32% to 0.
-- **Grid and axes:** dotted grid (`2 5`), tabular axis numerals.
-- **Hover:** a dashed pine cursor and an active point with a pulsing ring.
-- **Readout** (`MoneyTooltip`, `.hud-readout`): plate gradient, pine top seam, a ruled label row, tabular values.
-- **Meter** (`Meter` in `ui.tsx`): inset track, top-lit fill in accent / pos / warn / danger with a faint glow.
-- **Motion (one moment on arrival):** series draw in over 900ms ease-out, staggered; a single light sweep crosses each plate; meters grow from the left and catch one glint. All of it is off under reduced motion (Recharts animation disabled, pulse hidden).
+### Chart Plates (signature)
+Every chart sits on a HUD plate: ceramic gradient, 14px radius, a lit seam centered on the top edge, four corner brackets, and one diagonal sweep of light on arrival (1.3s, once). Bars use lit gradients (highlight band, true hue through the middle, shaded edge) so they read as turned solids without losing their hue; areas fade from 32% to 0; lines carry a soft glow. The active point is a solid dot with a pulsing ring. Tooltips are HUD readouts: dark glass at 14px blur with a pine-bright line on the top edge and tabular money lines. Legends sit above the chart in HTML. Series draw in over 900ms, staggered, and not at all under Reduce Motion.
 
-### Add Transaction Sheet (signature)
-A bottom sheet on phones, centered dialog from `md`. Income/spending segmented control on a tint track, a large centered amount well, quick date chips, then plain fields. The + button that opens it is the only always-visible Deep Pine element.
+### Meters
+A recessed pill track (6px, 8px for md) with a lit fill in pine, money-in, caution or alarm, a glow of its own color, a grow-in on arrival and a periodic white glint. The meter only scales a percentage the view already computed.
+
+### Banners
+16px-radius tinted strips (alarm, caution, or neutral glass for info) with a glowing icon tile, a bold title and body copy; alert role for danger and caution, status for info.
 
 ## Do's and Don'ts
 
 ### Do:
-- **Do** take every color from a CSS custom property with light and dark values (`web/src/index.css`).
-- **Do** render money through the shared `Money` / `Stat` / `Row` components so tabular figures and sign color stay consistent.
-- **Do** keep touch targets at least 40px (44px for phone inputs, 56px for tabs and the + button).
-- **Do** use the status tones only for status: ok, caution, overdue.
-- **Do** reuse `web/src/components/ui.tsx` primitives before adding new ones.
+- **Do** keep every color on a `:root` token in `web/src/index.css`; components never use raw hex.
+- **Do** make Safe-to-spend the only lit figure on a screen: emphasis plus reticle plus the panel beacon. Other headline figures use the large, unlit size.
+- **Do** color money in with Money-In Green (#1fb380) and leave money out in neutral ink; chart spending in Spending Ember (#e2652f).
+- **Do** keep icon chips pine or muted at rest and switch them to caution or alarm only while that status is active.
+- **Do** put every chart on a HUD plate with brackets, the lit gradients from the HUD defs, a readout tooltip, and the dotted `2 5` grid.
+- **Do** use tabular figures for every money value and count.
+- **Do** give every looping or arrival animation a reduced-motion path: loops removed, entrances skipped, decorative moving layers hidden. Arrival animations start from a near-visible state so content never depends on an animation finishing.
+- **Do** keep backdrop blur at 20px or less and ambient motion transform-only.
+- **Do** keep touch targets at 40px or more and money inputs on `inputMode="decimal"` at 16px on phones.
 
 ### Don't:
-- **Don't** color money out red or orange; red is for overdue and errors.
-- **Don't** add a second accent color or use Deep Pine as a decorative fill.
-- **Don't** add shadows to in-flow elements beyond the card's sheet-rest shadow (HUD instrumentation excepted).
-- **Don't** spread the HUD treatment (plates, glow, brackets, sweep) beyond charts and meters.
-- **Don't** introduce a webfont or a separate numeric font; the system stack with tabular figures is the type system.
-- **Don't** use chart series colors outside charts.
+- **Don't** add a light theme or light surfaces; the system is dark only.
+- **Don't** paint money out red. Red is for overdue, shortfall, overspent and error states only.
+- **Don't** light a second hero figure or put a reticle or beacon on more than one panel per screen.
+- **Don't** count up, tween or interpolate money values; no money arithmetic in the browser.
+- **Don't** introduce a custom display or web font; the system sans is a deliberate choice.
+- **Don't** run a full-screen sweeping scan or radar line across the background. The chart plate's single arrival sweep and the skeleton scan are the only sweeps.
+- **Don't** move the ambient field or any full-screen layer with anything but transforms; never animate layout properties (top, left, width, height) in a loop.
+- **Don't** let status hues glow decoratively; amber and coral appear only with an active state.
+- **Don't** return to the flat, light admin card grid.
