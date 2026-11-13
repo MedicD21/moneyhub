@@ -15,6 +15,7 @@ const NAV: Array<{ to: string; label: string; short: string; icon: IconName; des
   { to: '/paychecks', label: 'Paychecks', short: 'Paychecks', icon: 'wallet' },
   { to: '/spending', label: 'Spending', short: 'Spending', icon: 'chart' },
   { to: '/debts', label: 'Debts', short: 'Debts', icon: 'card' },
+  { to: '/what-if', label: 'What if', short: 'What if', icon: 'chart', desktopOnly: true },
   // Reached from the Dashboard card on phones (the dock has room for six tabs).
   { to: '/envelopes', label: 'Envelopes', short: 'Envelopes', icon: 'lock', desktopOnly: true },
 ];
@@ -63,12 +64,13 @@ function SignOutButton({ compact = false }: { compact?: boolean }) {
 }
 
 export function BrandMark({ size = 'md' }: { size?: 'md' | 'lg' }) {
-  const box = size === 'lg' ? 'h-11 w-11 rounded-[14px]' : 'h-9 w-9 rounded-xl';
+  const box = size === 'lg' ? 'h-14 w-14' : 'h-11 w-11';
   return (
-    <span className={cx('halo grid shrink-0 place-items-center bg-[var(--surface-solid)] text-accent-bright', box)} aria-hidden="true">
-      <svg viewBox="0 0 32 32" width={size === 'lg' ? 26 : 22} height={size === 'lg' ? 26 : 22} style={{ filter: 'drop-shadow(0 0 6px rgba(139,231,197,0.75))' }}>
-        <path d="M9 21V11l7 6 7-6v10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
+    <span className={cx('brand-orbit shrink-0', box)} aria-hidden="true">
+      <picture>
+        <source media="(prefers-reduced-motion: reduce)" srcSet="/brand-orbit-still.png" />
+        <img src="/brand-orbit.gif" alt="" width={160} height={160} decoding="async" />
+      </picture>
     </span>
   );
 }
@@ -85,14 +87,15 @@ function Brand() {
 function AddButton() {
   const { openAdd } = useEntry();
   const { keyboardOpen } = useVisualViewport();
+  const { pathname } = useLocation();
   // On iPhone fixed elements ride up on top of the keyboard and cover the field being typed in.
-  if (keyboardOpen) return null;
+  if (keyboardOpen || pathname === '/what-if') return null;
   return (
     <button
       type="button"
       onClick={openAdd}
       aria-label="Add transaction"
-      className="halo orb fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-30 grid h-14 w-14 place-items-center rounded-full text-accent-ink transition-transform duration-300 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-bright md:right-8 md:bottom-8"
+      className="halo orb fixed right-4 bottom-[calc(6rem+env(safe-area-inset-bottom))] z-30 grid h-14 w-14 place-items-center rounded-full text-action-ink transition-transform duration-300 hover:scale-105 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent-bright md:right-8 md:bottom-8"
     >
       <Icon name="plus" size={26} strokeWidth={2.4} />
     </button>
@@ -144,7 +147,7 @@ function Shell() {
             >
               {({ isActive }) => (
                 <>
-                  <Icon name={item.icon} size={18} className={isActive ? 'text-accent-bright' : 'transition-transform duration-300 group-hover:translate-x-0.5'} />
+                  <Icon name={item.icon} size={18} className={isActive ? 'text-action-bright' : 'transition-transform duration-300 group-hover:translate-x-0.5'} />
                   <span className="flex-1">{item.label}</span>
                   {isActive ? <span className="nav-dot" aria-hidden="true" /> : null}
                 </>
@@ -195,7 +198,7 @@ function Shell() {
             className={({ isActive }) =>
               cx(
                 'relative flex min-h-13 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-0.5 text-[10.5px] font-medium transition-colors duration-300 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent-bright',
-                isActive ? 'text-accent-bright' : 'text-muted',
+                isActive ? 'text-action-bright' : 'text-muted',
               )
             }
           >
@@ -204,7 +207,7 @@ function Shell() {
                 <Icon
                   name={item.icon}
                   size={20}
-                  style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(139,231,197,0.7))' } : undefined}
+                  style={isActive ? { filter: 'drop-shadow(0 0 6px rgba(248,144,93,0.7))' } : undefined}
                 />
                 <span className="max-w-full truncate">{item.short}</span>
               </>

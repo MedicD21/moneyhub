@@ -34,13 +34,19 @@
   --accent-soft: rgba(95, 195, 160, 0.14);
   --seam: rgba(139, 231, 197, 0.75);
 
-  /* the light matrix behind the glass: a band of out-of-focus lamps, warm to cold */
-  --lamp-1: #e34948;
-  --lamp-2: #e2652f;
-  --lamp-3: #e9a46c;
-  --lamp-4: #7cc7b4;
-  --lamp-5: #2f8a6b;
-  --lamp-6: #2c6fc0;
+  /* Dusty red and muted rose fade through champagne into deep teal. */
+  --lamp-1: #a66368;
+  --lamp-2: #bb8f88;
+  --lamp-3: #d5c18d;
+  --lamp-4: #91c4b6;
+  --lamp-5: #52a9aa;
+  --lamp-6: #367f91;
+
+  /* Warm action accents sampled from the orbit artwork. */
+  --action: #f8905d;
+  --action-bright: #ffb88d;
+  --action-deep: #c96735;
+  --action-ink: #241208;
 
   /* status */
   --pos: #1fb380;
@@ -103,6 +109,9 @@
   --color-accent-bright: var(--accent-bright);
   --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
+  --color-action: var(--action);
+  --color-action-bright: var(--action-bright);
+  --color-action-ink: var(--action-ink);
   --color-pos: var(--pos);
   --color-neg: var(--neg);
   --color-ok-bg: var(--ok-bg);
@@ -175,7 +184,7 @@ select option { background: var(--surface-solid); color: var(--text); }
 
 @layer components {
 /* ------------------------------------------------------------------------------------------ */
-/* Ambient field: the light behind the glass. Transform-only motion on a fixed layer.        */
+/* Ambient field: soft animated lights and bloom on a fixed layer.                         */
 /* ------------------------------------------------------------------------------------------ */
 
 .ambient {
@@ -185,8 +194,8 @@ select option { background: var(--surface-solid); color: var(--text); }
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(70% 55% at 62% 48%, rgba(16, 44, 56, 0.55), transparent 72%),
-    radial-gradient(40% 40% at 0% 50%, rgba(80, 18, 16, 0.35), transparent 70%),
+    radial-gradient(65% 40% at 62% 48%, rgba(5, 35, 31, 0.42), transparent 72%),
+    radial-gradient(30% 24% at 0% 50%, rgba(65, 33, 37, 0.22), transparent 70%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
 /* The lamp matrix itself is drawn by <LampField /> (canvas). */
@@ -195,17 +204,17 @@ select option { background: var(--surface-solid); color: var(--text); }
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.9;
+  opacity: 0.85;
 }
-/* Bloom behind the lamps: the same warm-to-cold ramp, no dots, very soft. */
+/* Bloom behind the lamps follows the same dusty-red-to-teal ramp. */
 .ambient-bloom {
   position: absolute;
   inset: -8% -6%;
-  background: linear-gradient(90deg, var(--lamp-1) 0%, var(--lamp-1) 10%, var(--lamp-2) 28%, var(--lamp-3) 42%, var(--lamp-4) 58%, var(--lamp-5) 74%, var(--lamp-6) 92%);
-  -webkit-mask-image: radial-gradient(ellipse 60% 24% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
-  mask-image: radial-gradient(ellipse 60% 24% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
+  background: linear-gradient(90deg, var(--lamp-1) 0%, var(--lamp-1) 20%, var(--lamp-2) 34%, var(--lamp-3) 42%, var(--lamp-4) 58%, var(--lamp-5) 74%, var(--lamp-6) 92%);
+  -webkit-mask-image: radial-gradient(ellipse 65% 52% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 65% 52% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
   filter: blur(36px);
-  opacity: 0.16;
+  opacity: 0.12;
   will-change: transform;
   animation: bloom-drift 46s var(--ease-glide) infinite alternate;
 }
@@ -213,14 +222,14 @@ select option { background: var(--surface-solid); color: var(--text); }
 .ambient-vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 85% 75% at 55% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  background: radial-gradient(ellipse 75% 55% at 55% 50%, transparent 25%, rgba(0, 0, 0, 0.72) 100%);
 }
 /* one thin vertical line of pine light, as in the sample */
 .ambient-line {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 22%;
+  left: 28.5%;
   width: 1px;
   background: linear-gradient(180deg, transparent, rgba(124, 199, 180, 0.6) 30%, rgba(124, 199, 180, 0.6) 70%, transparent);
   box-shadow: 0 0 10px rgba(95, 195, 160, 0.45);
@@ -412,12 +421,12 @@ select option { background: var(--surface-solid); color: var(--text); }
 .btn-lit {
   position: relative;
   overflow: hidden;
-  color: var(--accent-ink);
-  background: linear-gradient(180deg, var(--accent-bright), var(--accent) 55%, var(--accent-deep));
+  color: var(--action-ink);
+  background: linear-gradient(180deg, var(--action-bright), var(--action) 55%, var(--action-deep));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.55),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 8px 22px -10px rgba(95, 195, 160, 0.8);
+    0 8px 22px -10px rgba(248, 144, 93, 0.8);
   transition: box-shadow 0.3s var(--ease-out), transform 0.2s var(--ease-out), filter 0.3s var(--ease-out);
 }
 .btn-lit::after {
@@ -433,9 +442,10 @@ select option { background: var(--surface-solid); color: var(--text); }
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-    0 12px 30px -10px rgba(95, 195, 160, 0.95);
+    0 12px 30px -10px rgba(248, 144, 93, 0.95);
 }
 .btn-lit:hover:not(:disabled)::after { transform: translateX(110%); }
+.btn-lit:focus-visible, .orb:focus-visible { outline-color: var(--action-bright); }
 .btn-lit:active:not(:disabled) { transform: translateY(1px) scale(0.99); }
 
 .btn-glass {
@@ -475,8 +485,8 @@ select option { background: var(--surface-solid); color: var(--text); }
   bottom: 0;
   left: 0;
   width: 1px;
-  background: linear-gradient(180deg, rgba(139, 231, 197, 0.8), rgba(95, 195, 160, 0.35) 30%, rgba(255, 255, 255, 0.08) 80%);
-  box-shadow: 0 0 8px rgba(95, 195, 160, 0.45);
+  background: linear-gradient(180deg, rgba(248, 144, 93, 0.8), rgba(248, 144, 93, 0.35) 30%, rgba(255, 255, 255, 0.08) 80%);
+  box-shadow: 0 0 8px rgba(248, 144, 93, 0.45);
   transform-origin: top;
   animation: rule-draw-y 1.2s var(--ease-out) 0.15s both;
 }
@@ -507,13 +517,13 @@ select option { background: var(--surface-solid); color: var(--text); }
   background: linear-gradient(90deg, rgba(95, 195, 160, 0.22), rgba(95, 195, 160, 0.05));
   box-shadow: inset 0 0 0 1px rgba(95, 195, 160, 0.28), inset 0 1px 0 rgba(139, 231, 197, 0.25), 0 8px 24px -14px rgba(95, 195, 160, 0.8);
 }
-.nav-lit svg { filter: drop-shadow(0 0 6px rgba(139, 231, 197, 0.7)); }
+.nav-lit svg { filter: drop-shadow(0 0 6px rgba(248, 144, 93, 0.7)); }
 .nav-dot {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: var(--accent-bright);
-  box-shadow: 0 0 10px 2px rgba(139, 231, 197, 0.6);
+  background: var(--action);
+  box-shadow: 0 0 10px 2px rgba(248, 144, 93, 0.6);
   animation: dot-pulse 2.4s var(--ease-glide) infinite;
 }
 
@@ -544,11 +554,24 @@ select option { background: var(--surface-solid); color: var(--text); }
   right: 30%;
   height: 2px;
   border-radius: 2px;
-  background: var(--accent-bright);
-  box-shadow: 0 0 12px 2px rgba(139, 231, 197, 0.75);
+  background: var(--action);
+  box-shadow: 0 0 12px 2px rgba(248, 144, 93, 0.75);
 }
 
-/* Brand mark and the add button: a ring of light turns around them. */
+/* The orbit artwork supplies its own glow; feather its dark edges into the glass. */
+.brand-orbit {
+  display: block;
+  overflow: hidden;
+  border-radius: 28%;
+  mix-blend-mode: screen;
+  -webkit-mask-image: radial-gradient(ellipse, #000 48%, transparent 73%);
+  mask-image: radial-gradient(ellipse, #000 48%, transparent 73%);
+}
+.brand-orbit picture,
+.brand-orbit img { display: block; width: 100%; height: 100%; }
+.brand-orbit img { object-fit: cover; transform: scale(1.22); }
+
+/* The add button: a ring of light turns around it. */
 .halo { position: relative; isolation: isolate; }
 /* A ring (not a disc): the conic gradient is masked down to a 1.5px band and its angle turns. */
 .halo::before {
@@ -557,7 +580,7 @@ select option { background: var(--surface-solid); color: var(--text); }
   inset: -3px;
   border-radius: inherit;
   padding: 1.5px;
-  background: conic-gradient(from var(--halo-angle), transparent 0deg, rgba(139, 231, 197, 0.95) 70deg, transparent 150deg, transparent 210deg, rgba(57, 135, 229, 0.75) 290deg, transparent 360deg);
+  background: conic-gradient(from var(--halo-angle), transparent 0deg, rgba(255, 184, 141, 0.95) 70deg, transparent 150deg, transparent 210deg, rgba(248, 144, 93, 0.75) 290deg, transparent 360deg);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
@@ -565,12 +588,12 @@ select option { background: var(--surface-solid); color: var(--text); }
   pointer-events: none;
 }
 .orb {
-  background: radial-gradient(circle at 35% 28%, var(--accent-bright), var(--accent) 45%, var(--accent-deep) 100%);
+  background: radial-gradient(circle at 35% 28%, var(--action-bright), var(--action) 45%, var(--action-deep) 100%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 -6px 12px rgba(0, 0, 0, 0.25),
-    0 10px 30px -6px rgba(95, 195, 160, 0.75),
-    0 0 0 6px rgba(95, 195, 160, 0.08);
+    0 10px 30px -6px rgba(248, 144, 93, 0.75),
+    0 0 0 6px rgba(248, 144, 93, 0.08);
   animation: orb-breathe 4s var(--ease-glide) infinite alternate;
 }
 
@@ -724,8 +747,8 @@ select option { background: var(--surface-solid); color: var(--text); }
 @keyframes rule-draw-y { from { transform: scaleY(0); } }
 @keyframes skeleton-scan { to { transform: translateX(100%); } }
 @keyframes dot-pulse {
-  0%, 100% { box-shadow: 0 0 10px 2px rgba(139, 231, 197, 0.6); }
-  50% { box-shadow: 0 0 4px 0 rgba(139, 231, 197, 0.3); }
+  0%, 100% { box-shadow: 0 0 10px 2px rgba(248, 144, 93, 0.6); }
+  50% { box-shadow: 0 0 4px 0 rgba(248, 144, 93, 0.3); }
 }
 @keyframes halo-spin { to { --halo-angle: 360deg; } }
 @keyframes orb-breathe {
@@ -733,8 +756,8 @@ select option { background: var(--surface-solid); color: var(--text); }
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.6),
       inset 0 -6px 12px rgba(0, 0, 0, 0.25),
-      0 14px 40px -6px rgba(95, 195, 160, 0.95),
-      0 0 0 10px rgba(95, 195, 160, 0.05);
+      0 14px 40px -6px rgba(248, 144, 93, 0.95),
+      0 0 0 10px rgba(248, 144, 93, 0.05);
   }
 }
 @keyframes fade-in { from { opacity: 0; } }

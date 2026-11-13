@@ -1,5 +1,6 @@
 import { Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useId } from 'react';
+import { Link } from 'react-router-dom';
 import { useView, type ViewState } from '../hooks/useView';
 import type {
   Json,
@@ -54,7 +55,7 @@ export default function Debts() {
 
   return (
     <>
-      <PageHeader title="Debts" description="Balances are amounts owed, as your lender shows them." />
+      <PageHeader title="Debts" description="Balances are amounts owed, as your lender shows them." actions={<Link to="/what-if" className="btn-lit inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold">Explore what if</Link>} />
 
       <CollapsibleCard
         title="Debts"

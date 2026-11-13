@@ -134,7 +134,7 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
         className={cx(
           "absolute top-6 -left-[22.5px] h-3 w-3 rounded-full border-2 sm:-left-[30.5px]",
           current
-            ? "nav-dot border-accent-bright bg-accent-bright"
+            ? "nav-dot border-action bg-action"
             : past
               ? "border-line bg-surface-2"
               : "border-subtle bg-[var(--surface-solid)]",

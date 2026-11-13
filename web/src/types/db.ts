@@ -28,6 +28,50 @@ export type BillFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'a
 export type DebtKind = 'credit_card' | 'auto' | 'student' | 'personal' | 'medical' | 'mortgage' | 'other';
 export type DebtStrategy = 'avalanche' | 'snowball' | 'custom' | 'minimums_only';
 
+/** Read-only simulation; see docs/debt-simulation.md for zero-extra semantics. */
+export type DebtSimulationParams = {
+  strategy?: DebtStrategy;
+  custom?: Uuid[];
+  extra_monthly?: number;
+  lump_sums?: { date: IsoDate; amount: number; target_debt_id?: Uuid | null }[];
+  payoff_now?: Uuid[];
+  drop_payment?: (({ debt_id: Uuid; label?: never } | { label: string; debt_id?: never }) &
+    { from_month: string })[];
+  raise?: { effective_date: IsoDate; extra_net_per_paycheck: number };
+  overtime?: { pay_date: IsoDate; hours: number }[];
+  apr_overrides?: Record<Uuid, number>;
+};
+
+export type DebtSimulationResult = {
+  schedule: { month: string; debt_id: Uuid; start: number; interest: number; fee: number; minimum: number; payment: number; what_if_removed: number; end: number }[];
+  summary: {
+    total_interest: number; total_fees: number; total_interest_and_fees: number;
+    debt_free_month: string | null; completed: boolean; rollover: boolean;
+    interest_saved_vs_minimums: number | null; months_earlier_than_minimums: number | null;
+    what_if_removed: number;
+    payoff_order: { debt_id: Uuid; name: string; month: string }[];
+  };
+  monthly_balances: { month: string; opening_balance: number; balance: number; payment: number; minimum: number; interest: number; fees: number }[];
+  defaults: { strategy: DebtStrategy; extra_monthly: number; start_month: string; params: DebtSimulationParams };
+  affordability: {
+    as_of_date: IsoDate; from_date: IsoDate; through_date: IsoDate | null;
+    status: 'unavailable' | 'unfunded_what_if' | 'at_risk' | 'within_forecast';
+    periods: ScenarioAffordabilityPeriod[];
+    flagged_periods: number; cash_shortfall_periods: number; peak_gap: number;
+    unfunded_payoff: number; rainy_day: VRainyDaySuggestion | null;
+    suggested_draw: number | null; remaining_gap: number; full_plan_checked: boolean; method: string;
+  };
+};
+
+export type ScenarioAffordabilityPeriod = {
+  period_index: number; period_start: IsoDate; period_end: IsoDate; is_current: boolean;
+  baseline_obligations: number; available_cash: number; regular_extra: number;
+  lump_cash: number; released_obligations: number; added_income: number;
+  net_extra: number; cumulative_extra: number; projected_cash: number;
+  low_balance_floor: number; max_safe_to_spend: number; cash_gap: number;
+  gap_to_floor: number; flagged: boolean; cash_shortfall: boolean;
+};
+
 // ---------------------------------------------------------------------------
 // Tables (read for filter dropdowns only)
 // ---------------------------------------------------------------------------
@@ -638,10 +682,11 @@ export type Database = {
       v_rainy_day_suggestion: ReadOnlyView<VRainyDaySuggestion>;
     };
     /**
-     * The only writes the web app can make: narrow, owner-checked SECURITY DEFINER functions
-     * (20261113000000). They are called from src/lib/writes.ts and nowhere else.
+     * Owner-checked RPCs. Writes are called only from src/lib/writes.ts.
+     * simulate_debt_plan is read-only and has no UI caller yet.
      */
     Functions: {
+      simulate_debt_plan: { Args: { p_params?: DebtSimulationParams }; Returns: DebtSimulationResult };
       add_manual_transaction: { Args: ManualTransactionArgs; Returns: Uuid };
       update_manual_transaction: { Args: ManualTransactionUpdateArgs; Returns: Uuid };
       delete_manual_transaction: { Args: { p_id: Uuid }; Returns: undefined };

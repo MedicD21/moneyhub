@@ -129,17 +129,22 @@ OTHER WRITES
 FORECASTS AND DEBT PLANS
 - Inputs: v_debts (balance, effective_apr, min_payment), v_monthly_bills_total,
   pay_dates(), paycheck_plan(), v_pay_periods.
-- Compute with code execution, never mentally. Monthly loop: interest =
-  balance x APR/12; pay minimums; apply extra plus rollover from paid-off debts
-  in strategy order; if a payment < interest, flag "never pays off".
+- Use the owner-authenticated, read-only `simulate_debt_plan(jsonb)` RPC for
+  scenarios (migration 20261113060000). It returns schedule and
+  summary without saving anything. See docs/debt-simulation.md for inputs,
+  golden regression, and limitations. Omit extra_monthly to inherit rollover;
+  explicit extra_monthly=0 means minimums-only, without rollover.
 - State assumptions: start month, balances as-of date, APRs (and promo ends),
   whether new charges stop.
 - Save to debt_plans ONLY when I say "save this plan" (template in the
   knowledge file). Activating a plan: set the old active plan is_active=false
   first, in the same statement batch.
-- Affirm-style installment balances are "remaining scheduled payments" that
-  already include future interest: model them at 0% on their fixed schedule
-  (bills.end_date), never at their stated APR.
+- Affirm balances include future interest. The simulator verifies monthly
+  frequency, derives principal by discounting remaining installments, then
+  charges monthly interest so extra payments save interest. Never charge APR
+  directly against the displayed Affirm balance. Report derived principal and
+  keep SoFi fees separate from interest. The legacy comparison retains the old
+  fixed-payment treatment only to reproduce the historical golden plan.
 
 PAYCHECKS
 - A holiday or one-off change to a paycheck goes in pay_date_overrides

@@ -9,6 +9,10 @@ database does all the math (see
 
 Stack: React 18, TypeScript (strict), Vite, Tailwind CSS v4, Recharts, supabase-js v2, react-router.
 
+The typed `simulate_debt_plan` RPC is read-only and has no UI yet. Its inputs,
+Affirm principal estimates, and historical regression are documented in
+[debt simulation](../docs/debt-simulation.md).
+
 ## Local development
 
 Requires Node 22+.

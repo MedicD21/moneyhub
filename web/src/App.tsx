@@ -13,6 +13,7 @@ const Bills = lazy(() => import('./pages/Bills'));
 const Paychecks = lazy(() => import('./pages/Paychecks'));
 const Spending = lazy(() => import('./pages/Spending'));
 const Debts = lazy(() => import('./pages/Debts'));
+const WhatIf = lazy(() => import('./pages/WhatIf'));
 const Envelopes = lazy(() => import('./pages/Envelopes'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
@@ -43,6 +44,7 @@ function Gate() {
             ['/paychecks', Paychecks],
             ['/spending', Spending],
             ['/debts', Debts],
+            ['/what-if', WhatIf],
             ['/envelopes', Envelopes],
             ['*', NotFound],
           ] as const

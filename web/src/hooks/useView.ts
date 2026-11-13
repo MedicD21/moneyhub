@@ -29,12 +29,13 @@ function describeError(error: NonNullable<PgResponse['error']>): string {
  *
  * `key` identifies the query: whenever it changes, the query re-runs. Pass
  * `null` to skip (e.g. while a dependency is still loading). `build` should
- * only call `.from(...).select(...)` plus filters; it is read from a ref, so
- * an inline arrow is fine.
+ * only read views/tables or use the whitelisted read RPC in lib/reads.ts.
+ * An optional delay debounces reads; cleanup aborts and ignores stale responses.
  */
 export function useView<T>(
   key: string | null,
-  build: (sb: MoneyHubClient) => PromiseLike<PgResponse>,
+  build: (sb: MoneyHubClient, signal: AbortSignal) => PromiseLike<PgResponse>,
+  delayMs = 0,
 ): ViewState<T> {
   const buildRef = useRef(build);
   useEffect(() => {
@@ -48,10 +49,11 @@ export function useView<T>(
   useEffect(() => {
     if (requestKey === null || !supabase) return;
     let cancelled = false;
+    const controller = new AbortController();
     const client = supabase;
 
-    Promise.resolve()
-      .then(() => buildRef.current(client))
+    const timer = setTimeout(() => { void Promise.resolve()
+      .then(() => buildRef.current(client, controller.signal))
       .then(
         (res) => {
           if (cancelled) return;
@@ -67,12 +69,14 @@ export function useView<T>(
           const message = err instanceof Error ? err.message : 'Network error: could not reach Supabase.';
           setSettled({ key: requestKey, data: null, error: message, count: null });
         },
-      );
+      ); }, delayMs);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
+      controller.abort();
     };
-  }, [requestKey]);
+  }, [requestKey, delayMs]);
 
   const reload = useCallback(() => setNonce((n) => n + 1), []);
 
