@@ -134,7 +134,7 @@ FORECASTS AND DEBT PLANS
   summary without saving anything. See docs/debt-simulation.md for inputs,
   golden regression, and limitations. Omit extra_monthly to inherit rollover;
   explicit extra_monthly=0 means minimums-only, without rollover.
-  Once migration 20261113070000 is applied the result also carries monthly_balances,
+  The result also carries monthly_balances,
   defaults and a forecast affordability screen (the web app's What if page shows them);
   quote affordability only from those fields, never from your own arithmetic.
 - State assumptions: start month, balances as-of date, APRs (and promo ends),

@@ -10,10 +10,12 @@ Simulations never save or activate plans. The web app's **What if** page (`/what
 linked from Debts) is the UI for this RPC and calls it through `web/src/lib/reads.ts`.
 
 `20261113070000_debt_scenario_affordability.sql` decorates the result with
-`monthly_balances`, `defaults` and `affordability` (below). **It is not yet applied to
-production** as of 2026-11-13; until it is, the What if page shows "The scenario database
-update has not been installed yet." It passes the local pgTAP suite
-(`18_debt_scenario_affordability.test.sql`).
+`monthly_balances`, `defaults` and `affordability` (below). Installed in production on
+November 13, 2026; Supabase recorded apply version `20261113162900` under the name
+`debt_scenario_affordability`. Before/after checks left `v_dashboard`, the current
+`v_pay_period_forecast` row and the counts of debts (18), balance records (27) and plans (3)
+unchanged. Without it the What if page shows "The scenario database update has not been
+installed yet." Covered by `18_debt_scenario_affordability.test.sql`.
 
 Installed in Money Hub production on November 13, 2026, from
 `20261113060000_simulate_debt_plan.sql`; Supabase recorded apply version
