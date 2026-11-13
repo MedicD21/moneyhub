@@ -429,6 +429,15 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
 function ForecastBox({ f }: { f: VPayPeriodForecast }) {
   const holding = f.hold_for_later > 0;
   const drawing = f.hold_for_later < 0;
+  // The next-period figures come straight from the view (database does the math).
+  const hasNext =
+    f.next_income !== null &&
+    f.next_obligations !== null &&
+    f.next_draw !== null &&
+    f.next_period_end !== null;
+  const nextRange = f.next_period_end
+    ? `${formatDate(f.next_pay_date, "short")} – ${formatDate(f.next_period_end, "short")}`
+    : "";
   return (
     <div
       className={cx(
@@ -451,26 +460,56 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
         </span>
       </Row>
       {holding ? (
-        <Row label="Hold back for later">
+        <Row label="Held back for later paychecks">
           <Money value={f.hold_for_later} />
         </Row>
       ) : null}
       {drawing ? (
-        <Row label="Uses money held back earlier">
+        <Row label="Taken from money held back earlier">
           <Money value={-f.hold_for_later} />
         </Row>
       ) : null}
-      <Row label="Projected cash at period end">
-        <Money value={f.carry_out} />
-      </Row>
+      {f.cash_before_spending !== null ? (
+        <Row
+          label={
+            f.is_current
+              ? "Cash left when this period ends"
+              : "Cash at end of period (before spending)"
+          }
+        >
+          <Money value={f.cash_before_spending} />
+        </Row>
+      ) : (
+        <Row label="Projected cash at period end">
+          <Money value={f.carry_out} />
+        </Row>
+      )}
+      {hasNext && (f.next_draw ?? 0) > 0 ? (
+        <Row label={`Next period's bills not covered by its paycheck (${nextRange})`}>
+          <Money value={f.next_draw} />
+        </Row>
+      ) : null}
+      {hasNext ? (
+        <p className="mt-1.5 text-xs text-muted">
+          Next period ({nextRange}): {formatCurrency(f.next_obligations)} in
+          bills
+          {(f.next_income ?? 0) > 0
+            ? `, ${formatCurrency(f.next_income)} paycheck`
+            : ""}
+          .{" "}
+          {(f.next_draw ?? 0) > 0
+            ? `${formatCurrency(f.next_draw)} of it has to come from the cash left over from this period.`
+            : "Its paycheck covers it."}
+        </p>
+      ) : null}
       <p className="mt-1.5 text-xs text-muted">
-        Keeps your balance above {formatCurrency(f.low_balance_floor)} through
-        the next paychecks
-        {f.binding_date
-          ? `; tightest point ${formatDate(f.binding_date, "short")}`
-          : ""}
-        . Up to {formatCurrency(f.max_safe_to_spend)} this period if later
-        periods spend nothing extra.
+        {f.shortfall && f.binding_date && f.binding_balance !== null
+          ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} on ${formatDate(f.binding_date, "short")}, which is ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. Any spending now makes that gap bigger.`
+          : `Keeps your balance above ${formatCurrency(f.low_balance_floor)} through the next paychecks${
+              f.binding_date
+                ? `; tightest point ${formatDate(f.binding_date, "short")}`
+                : ""
+            }. Up to ${formatCurrency(f.max_safe_to_spend)} this period if later periods spend nothing extra.`}
         {f.is_current
           ? ` Based on cash as of ${formatDate(f.cash_as_of, "short")}.`
           : ""}

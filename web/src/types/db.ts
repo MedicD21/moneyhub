@@ -344,6 +344,15 @@ export type VPayPeriodForecast = {
   shortfall: boolean;
   /** this period's paycheck is already recorded as a deposit */
   income_received: boolean;
+  /** cash left when this period ends, before spending this period's safe_to_spend */
+  cash_before_spending: number | null;
+  /** paycheck(s) still to arrive in the following period (null for the last forecast row) */
+  next_income: number | null;
+  /** bills, minimums and set-asides due in the following period */
+  next_obligations: number | null;
+  /** next_obligations minus next_income: what the following period takes from this period's leftover cash */
+  next_draw: number | null;
+  next_period_end: IsoDate | null;
 };
 
 /** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */

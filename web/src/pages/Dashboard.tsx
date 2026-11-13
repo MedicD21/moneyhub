@@ -135,7 +135,9 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
           {shortfall ? (
             <Banner tone="danger" title="Shortfall this pay period">
               {f
-                ? `Even with no spending, projected cash drops below your ${formatCurrency(f.low_balance_floor)} floor around ${formatDate(f.binding_date, 'short')}.`
+                ? f.binding_balance !== null
+                  ? `Even if you spend nothing extra, cash is projected to reach ${formatCurrency(f.binding_balance)} around ${formatDate(f.binding_date, 'short')}, ${formatCurrency(-f.safe_to_spend)} below your ${formatCurrency(f.low_balance_floor)} minimum balance. See Paychecks for which bills cause it.`
+                  : `Even with no spending, projected cash drops below your ${formatCurrency(f.low_balance_floor)} minimum balance around ${formatDate(f.binding_date, 'short')}.`
                 : `Bills, minimums and set-asides exceed this paycheck. Safe to spend is ${formatCurrency(d.safe_to_spend)}.`}
             </Banner>
           ) : null}
@@ -181,12 +183,26 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
                 value={<Money value={f.safe_to_spend} />}
                 emphasis
                 tone={f.safe_to_spend < 0 ? 'danger' : 'default'}
-                hint="Steady amount that still covers short paychecks ahead"
+                hint={
+                  f.safe_to_spend < 0
+                    ? 'Spending anything extra now makes the shortfall bigger'
+                    : 'Steady amount that still covers short paychecks ahead'
+                }
               />
               <div className="mt-3 divide-y divide-line border-t border-line">
                 {f.hold_for_later > 0 ? (
-                  <Row label="Hold back for later">
+                  <Row label="Held back for later paychecks">
                     <Money value={f.hold_for_later} />
+                  </Row>
+                ) : null}
+                {f.cash_before_spending !== null ? (
+                  <Row label="Cash left when this period ends">
+                    <Money value={f.cash_before_spending} />
+                  </Row>
+                ) : null}
+                {f.next_draw !== null && f.next_draw > 0 ? (
+                  <Row label="Next period's bills your paycheck won't cover">
+                    <Money value={f.next_draw} />
                   </Row>
                 ) : null}
                 <Row label="Spent so far">
