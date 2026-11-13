@@ -6,6 +6,7 @@ import { cx } from '../lib/cx';
 import { EntryProvider, useEntry } from './EntryContext';
 import { TransactionSheet } from './TransactionSheet';
 import { useVisualViewport } from '../hooks/useVisualViewport';
+import { LampField } from './LampField';
 
 const NAV: Array<{ to: string; label: string; short: string; icon: IconName; desktopOnly?: boolean }> = [
   { to: '/', label: 'Dashboard', short: 'Home', icon: 'home' },
@@ -24,14 +25,14 @@ function activeIndex(pathname: string, items: typeof NAV): number {
   return items.findIndex((item) => (item.to === '/' ? pathname === '/' : pathname === item.to || pathname.startsWith(`${item.to}/`)));
 }
 
-/** The light behind the glass: drifting fields, a slow grid and grain. */
+/** The light behind the glass: an LED wall with a winding ribbon of light, its bloom, one lit line, vignette and grain. */
 export function Ambient() {
   return (
     <div className="ambient" aria-hidden="true">
-      <div className="ambient-field" data-f="1" />
-      <div className="ambient-field" data-f="2" />
-      <div className="ambient-field" data-f="3" />
-      <div className="ambient-grid" />
+      <div className="ambient-bloom" />
+      <LampField />
+      <div className="ambient-line" />
+      <div className="ambient-vignette" />
       <div className="ambient-grain" />
     </div>
   );

@@ -9,9 +9,9 @@
   color-scheme: dark;
 
   /* ground and glass */
-  --bg: #050807;
-  --bg-deep: #020403;
-  --surface: rgba(15, 21, 20, 0.6);
+  --bg: #03080a;
+  --bg-deep: #010305;
+  --surface: rgba(10, 17, 19, 0.72);
   --surface-solid: #0d1312;
   --surface-2: rgba(255, 255, 255, 0.05);
   --border: rgba(255, 255, 255, 0.085);
@@ -34,10 +34,13 @@
   --accent-soft: rgba(95, 195, 160, 0.14);
   --seam: rgba(139, 231, 197, 0.75);
 
-  /* field lights behind the glass */
-  --field-1: rgba(47, 138, 107, 0.42);
-  --field-2: rgba(25, 158, 112, 0.24);
-  --field-3: rgba(57, 135, 229, 0.2);
+  /* the light matrix behind the glass: a band of out-of-focus lamps, warm to cold */
+  --lamp-1: #e34948;
+  --lamp-2: #e2652f;
+  --lamp-3: #e9a46c;
+  --lamp-4: #7cc7b4;
+  --lamp-5: #2f8a6b;
+  --lamp-6: #2c6fc0;
 
   /* status */
   --pos: #1fb380;
@@ -182,47 +185,46 @@ select option { background: var(--surface-solid); color: var(--text); }
   overflow: hidden;
   pointer-events: none;
   background:
-    radial-gradient(120% 80% at 50% -10%, rgba(47, 138, 107, 0.16), transparent 60%),
-    radial-gradient(90% 60% at 100% 110%, rgba(25, 80, 70, 0.22), transparent 60%),
+    radial-gradient(70% 55% at 62% 48%, rgba(16, 44, 56, 0.55), transparent 72%),
+    radial-gradient(40% 40% at 0% 50%, rgba(80, 18, 16, 0.35), transparent 70%),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
-.ambient-field {
+/* The lamp matrix itself is drawn by <LampField /> (canvas). */
+.ambient-canvas {
   position: absolute;
-  width: 70vmax;
-  height: 70vmax;
-  border-radius: 50%;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.9;
+}
+/* Bloom behind the lamps: the same warm-to-cold ramp, no dots, very soft. */
+.ambient-bloom {
+  position: absolute;
+  inset: -8% -6%;
+  background: linear-gradient(90deg, var(--lamp-1) 0%, var(--lamp-1) 10%, var(--lamp-2) 28%, var(--lamp-3) 42%, var(--lamp-4) 58%, var(--lamp-5) 74%, var(--lamp-6) 92%);
+  -webkit-mask-image: radial-gradient(ellipse 60% 24% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
+  mask-image: radial-gradient(ellipse 60% 24% at 50% 50%, #000 0%, rgba(0, 0, 0, 0.3) 60%, transparent 100%);
+  filter: blur(36px);
+  opacity: 0.16;
   will-change: transform;
+  animation: bloom-drift 46s var(--ease-glide) infinite alternate;
 }
-.ambient-field[data-f='1'] {
-  top: -30vmax;
-  left: -18vmax;
-  background: radial-gradient(circle, var(--field-1) 0%, transparent 62%);
-  animation: field-drift-a 38s var(--ease-glide) infinite alternate;
-}
-.ambient-field[data-f='2'] {
-  bottom: -34vmax;
-  right: -22vmax;
-  background: radial-gradient(circle, var(--field-2) 0%, transparent 62%);
-  animation: field-drift-b 46s var(--ease-glide) infinite alternate;
-}
-.ambient-field[data-f='3'] {
-  top: 30%;
-  left: 45%;
-  width: 52vmax;
-  height: 52vmax;
-  background: radial-gradient(circle, var(--field-3) 0%, transparent 62%);
-  animation: field-drift-c 54s var(--ease-glide) infinite alternate;
-}
-.ambient-grid {
+/* Edges fall to black so the light sits in the middle of the room. */
+.ambient-vignette {
   position: absolute;
-  inset: -64px;
-  background-image:
-    linear-gradient(rgba(139, 231, 197, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 231, 197, 0.05) 1px, transparent 1px);
-  background-size: 64px 64px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 10%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 30%, #000 10%, transparent 75%);
-  animation: grid-pan 24s linear infinite;
+  inset: 0;
+  background: radial-gradient(ellipse 85% 75% at 55% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+}
+/* one thin vertical line of pine light, as in the sample */
+.ambient-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 22%;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, rgba(124, 199, 180, 0.6) 30%, rgba(124, 199, 180, 0.6) 70%, transparent);
+  box-shadow: 0 0 10px rgba(95, 195, 160, 0.45);
+  animation: line-glow 6s var(--ease-glide) infinite alternate;
 }
 .ambient-grain {
   position: absolute;
@@ -260,12 +262,13 @@ select option { background: var(--surface-solid); color: var(--text); }
   z-index: 1;
   pointer-events: none;
   background:
-    linear-gradient(90deg, transparent 0 42%, var(--seam-color) 50%, transparent 58% 100%) no-repeat,
-    linear-gradient(90deg, transparent, color-mix(in oklab, var(--seam-color) 72%, transparent) 50%, transparent);
+    linear-gradient(90deg, transparent 0 44%, color-mix(in oklab, var(--seam-color) 70%, transparent) 50%, transparent 56% 100%) no-repeat,
+    linear-gradient(90deg, transparent, color-mix(in oklab, var(--seam-color) 45%, transparent) 50%, transparent);
   background-size: 60% 100%, 100% 100%;
   background-position: -120% 0, 0 0;
-  box-shadow: 0 0 8px color-mix(in oklab, var(--seam-color) 55%, transparent);
-  animation: seam-travel 7.5s var(--ease-glide) var(--seam-delay, 1.2s) infinite;
+  box-shadow: 0 0 4px color-mix(in oklab, var(--seam-color) 30%, transparent);
+  /* A rare event: each panel's seam carries one pulse every two minutes, offset per panel. */
+  animation: seam-travel 120s var(--ease-glide) var(--seam-delay, 14s) infinite;
 }
 .glass[data-tone='accent'] {
   border-color: rgba(95, 195, 160, 0.32);
@@ -361,19 +364,21 @@ select option { background: var(--surface-solid); color: var(--text); }
 /* Arrival. Content is never hidden at rest: animations only run from a near-visible state.   */
 /* ------------------------------------------------------------------------------------------ */
 
-.page-enter { animation: page-in 0.55s var(--ease-out) both; }
+/* Release entrance effects afterward: retained opacity/filter animations create a
+   backdrop root that prevents cards from frosting the ambient field. */
+.page-enter { animation: page-in 0.55s var(--ease-out) backwards; }
 
 .rise {
-  animation: rise 0.7s var(--ease-out) both;
+  animation: rise 0.7s var(--ease-out) backwards;
   animation-delay: var(--d, 0ms);
 }
-:where(.stagger) > :nth-child(1) { --d: 40ms; --seam-delay: 1.1s; }
-:where(.stagger) > :nth-child(2) { --d: 100ms; --seam-delay: 2.4s; }
-:where(.stagger) > :nth-child(3) { --d: 160ms; --seam-delay: 3.6s; }
-:where(.stagger) > :nth-child(4) { --d: 220ms; --seam-delay: 4.7s; }
-:where(.stagger) > :nth-child(5) { --d: 280ms; --seam-delay: 5.6s; }
-:where(.stagger) > :nth-child(6) { --d: 340ms; --seam-delay: 6.4s; }
-:where(.stagger) > :nth-child(n + 7) { --d: 400ms; --seam-delay: 7s; }
+:where(.stagger) > :nth-child(1) { --d: 40ms; --seam-delay: 9s; }
+:where(.stagger) > :nth-child(2) { --d: 100ms; --seam-delay: 47s; }
+:where(.stagger) > :nth-child(3) { --d: 160ms; --seam-delay: 86s; }
+:where(.stagger) > :nth-child(4) { --d: 220ms; --seam-delay: 28s; }
+:where(.stagger) > :nth-child(5) { --d: 280ms; --seam-delay: 103s; }
+:where(.stagger) > :nth-child(6) { --d: 340ms; --seam-delay: 64s; }
+:where(.stagger) > :nth-child(n + 7) { --d: 400ms; --seam-delay: 75s; }
 
 .figure-in { animation: figure-in 0.9s var(--ease-out) both; animation-delay: calc(var(--d, 0ms) + 120ms); }
 
@@ -682,7 +687,7 @@ select option { background: var(--surface-solid); color: var(--text); }
   inset: 0;
   background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.6) 50%, transparent 70%);
   transform: translateX(-120%);
-  animation: hud-glint 4.5s var(--ease-glide) 1.2s infinite;
+  animation: hud-glint 40s var(--ease-glide) 6s infinite;
 }
 
 .glass.sheet-in {
@@ -695,13 +700,12 @@ select option { background: var(--surface-solid); color: var(--text); }
 /* Keyframes                                                                                   */
 /* ------------------------------------------------------------------------------------------ */
 
-@keyframes field-drift-a { to { transform: translate3d(14vmax, 10vmax, 0) scale(1.15); } }
-@keyframes field-drift-b { to { transform: translate3d(-16vmax, -12vmax, 0) scale(0.9); } }
-@keyframes field-drift-c { to { transform: translate3d(-22vmax, -8vmax, 0) scale(1.2); } }
-@keyframes grid-pan { to { transform: translate3d(64px, 64px, 0); } }
+@keyframes bloom-drift { to { transform: translate3d(4vw, -1vh, 0) scale(1.05); } }
+@keyframes line-glow { from { opacity: 0.55; } to { opacity: 1; } }
 @keyframes seam-travel {
+  /* the pulse crosses in ~2.4s (2% of the cycle) and the seam rests for the remainder */
   0% { background-position: -120% 0, 0 0; }
-  45%, 100% { background-position: 220% 0, 0 0; }
+  2%, 100% { background-position: 220% 0, 0 0; }
 }
 @keyframes beacon-breathe {
   from { transform: scale(0.92); opacity: 0.75; }
@@ -739,7 +743,7 @@ select option { background: var(--surface-solid); color: var(--text); }
 @keyframes hud-grow { from { transform: scaleX(0); } }
 @keyframes hud-glint {
   0% { transform: translateX(-120%); }
-  35%, 100% { transform: translateX(120%); }
+  4%, 100% { transform: translateX(120%); }
 }
 @keyframes hud-pulse {
   0% { transform: scale(1); opacity: 0.55; }
@@ -773,8 +777,8 @@ select option { background: var(--surface-solid); color: var(--text); }
   .timeline::before,
   .hud-fill,
   .hud-plate::after,
-  .ambient-field,
-  .ambient-grid,
+  .ambient-bloom,
+  .ambient-line,
   .beacon,
   .halo::before,
   .reticle::before,

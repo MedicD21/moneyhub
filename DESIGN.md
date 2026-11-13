@@ -2,8 +2,8 @@
 name: Money Hub
 description: A night instrument cluster of smoked glass with lit pine seams, over database-computed money figures. Dark only.
 colors:
-  ground: "#050807"
-  ground-deep: "#020403"
+  ground: "#03080a"
+  ground-deep: "#010305"
   glass-fill: "rgba(15, 21, 20, 0.6)"
   glass-solid: "#0d1312"
   glass-wash: "rgba(255, 255, 255, 0.05)"
@@ -19,9 +19,12 @@ colors:
   pine-ink: "#03140d"
   pine-wash: "rgba(95, 195, 160, 0.14)"
   seam-light: "rgba(139, 231, 197, 0.75)"
-  field-pine: "rgba(47, 138, 107, 0.42)"
-  field-teal: "rgba(25, 158, 112, 0.24)"
-  field-cold-blue: "rgba(57, 135, 229, 0.2)"
+  lamp-red: "#e34948"
+  lamp-orange: "#e2652f"
+  lamp-peach: "#e9a46c"
+  lamp-mint: "#7cc7b4"
+  lamp-pine: "#2f8a6b"
+  lamp-blue: "#2c6fc0"
   money-in: "#1fb380"
   money-in-wash: "rgba(31, 179, 128, 0.12)"
   money-in-line: "rgba(31, 179, 128, 0.4)"
@@ -190,7 +193,7 @@ components:
 
 **Creative North Star: "The Night Instrument Cluster"**
 
-Money Hub is a dashboard you read in the dark: smoked glass panels floating over a near-black ground, with pine light leaking from behind them and running along their top edges. The light source is always pine. It drifts in slow fields behind the glass, travels each panel's seam, lights the active nav item, glides under the dock tab, and pools brightest behind the one number that matters on a screen: Safe-to-spend. Everything else sits one step dimmer.
+Money Hub is a dashboard you read in the dark: smoked glass panels floating over a near-black navy-teal ground and a band of out-of-focus lamps that runs warm to cold (red, orange, peach, mint, pine, blue), with one thin vertical line of pine light. Pine is the interface light: it travels each panel's seam, lights the active nav item, glides under the dock tab, and pools brightest behind the one number that matters on a screen: Safe-to-spend. Everything else sits one step dimmer.
 
 The world is dense but quiet. Panels are frosted and beveled, edges are 1px white-alpha lines, and color is rationed: status hues (green, amber, coral) glow only where they carry meaning, and money out is never painted red. Figures are system sans with tabular digits, so columns of money align digit for digit and nothing pretends to be a display face. Motion is maximal (seams travel, halos turn, fields drift, panels rise into place), and all of it stops under Reduce Motion without hiding a single figure.
 
@@ -222,7 +225,8 @@ A near-black pine-tinted ground, translucent glass over it, one pine light, and 
 ### Tertiary
 - **Caution Amber** (caution): stale data, review queues, needs-attention states.
 - **Alarm Coral** (alarm): overdue bills, shortfall and overspent states, low balances, errors. Its wash and line tokens tint danger panels, badges and banners.
-- **Cold Blue Field** (field-cold-blue, series-1): a counter-light. One ambient field and the far arc of the reticle and halo rings.
+- **Lamp Matrix** (lamp-red → lamp-blue): the background only. Drawn on a canvas by `LampField` as an LED wall: every lamp on a 24px grid (18px on phones) shows as a dark socket, and lit lamps form one wide band (about 14 rows tall) whose centre sways gently and whose thickness breathes slowly, quantised to the grid. Colour runs warm to cold left to right; the ribbon's core burns hotter. Each lit lamp is a crisp lens with a bright core, coloured body, thin halo and small specular; only the far-left edge is slightly soft. A faint blurred bloom of the ramp sits behind. Capped at 30fps, paused when hidden, a single still frame under Reduce Motion. These colors never carry meaning and never appear on panels or data.
+- **Cold Blue** (series-1): the far arc of the reticle and halo rings.
 
 ### Neutral
 - **Night Ground** (ground → ground-deep): the page, painted only on `<html>` so the ambient layer shows through.
@@ -234,7 +238,7 @@ A near-black pine-tinted ground, translucent glass over it, one pine light, and 
 - **Categorical series** (series-1 … series-8): validated palette, fixed order, never cycled; a ninth series falls back to ink-subtle.
 
 ### Named Rules
-**The One Green Rule.** Money-In Green is the only green that carries meaning, and it means money in. Money out stays neutral ink. Red never marks an ordinary outflow; it is reserved for overdue, shortfall, overspent and error states.
+**The One Green Rule.** Money-In Green is the only green that carries meaning, and it means money in. Money out stays neutral ink. Red never marks an ordinary outflow; it is reserved for overdue, shortfall, overspent and error states, and a negative net position (owner confirmed).
 
 **The Ember Series Rule.** Spending in charts is Spending Ember (orange), paired against Money-In Green income. A red spending series is wrong.
 
@@ -274,7 +278,7 @@ Content is a stack of glass panels in 16px-gap grids; panels pad 16px (20px from
 
 ## Elevation & Depth
 
-Depth is layered light and glass, not flat tone. Three planes: the animated ambient field (drifting pine, teal and cold-blue light, a slowly panning 64px grid masked to the upper center, 6% grain), the glass panels floating over it, and overlays (sheets, readouts) above. Every glass panel combines a top bevel highlight, a bottom inner shade, and a soft long drop shadow, plus a 1px lit seam on its top edge. Accent and danger panels add a colored outer bloom.
+Depth is layered light and glass, not flat tone. Three planes: the ambient layer (navy-teal ground, the canvas LED wall with its swaying band and bloom, one vertical pine line at 22% from the left, an edge vignette, 6% grain), the glass panels floating over it, and overlays (sheets, readouts) above. Every glass panel combines a top bevel highlight, a bottom inner shade, and a soft long drop shadow, plus a 1px lit seam on its top edge. Accent and danger panels add a colored outer bloom.
 
 ### Shadow Vocabulary
 - **Glass drop** (`box-shadow: inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(0,0,0,0.35), 0 24px 48px -28px rgba(0,0,0,0.9), 0 2px 6px -2px rgba(0,0,0,0.5)`): every glass panel, rail, bar and dock.
@@ -312,10 +316,10 @@ Lit, tactile, and quiet everywhere except the one primary action.
 
 ### Cards / Containers
 - **Corner Style:** 20px.
-- **Background:** smoked glass (60% fill, white highlight gradient, 20px blur, 150% saturate).
+- **Background:** smoked glass (72% fill so the lamps never compete with text, white highlight gradient, 20px blur, 150% saturate).
 - **Shadow Strategy:** glass drop; accent or danger bloom only on toned panels (see Elevation).
 - **Border:** 1px edge; pine at 32% for accent, alarm line for danger.
-- **Seam:** a resting 1px pine line on the top edge with a brighter pulse that travels it every 7.5s, staggered per panel. Danger and warn panels tint the seam.
+- **Seam:** a resting 1px pine line on the top edge with a faint pulse that travels it once every 120s, offset per panel, so it reads as a rare event. Danger and warn panels tint the seam.
 - **Internal Padding:** 16px, 20px from sm. Title row: chip + title + muted subtitle, optional action on the right.
 - **Collapsible variant:** native details/summary with a 48px summary, rotating chevron tile, and a pill count; content mounts only when open.
 
@@ -355,11 +359,12 @@ A recessed pill track (6px, 8px for md) with a lit fill in pine, money-in, cauti
 
 ### Don't:
 - **Don't** add a light theme or light surfaces; the system is dark only.
-- **Don't** paint money out red. Red is for overdue, shortfall, overspent and error states only.
+- **Don't** paint money out red. Red is for overdue, shortfall, overspent, error states and a negative net position only.
 - **Don't** light a second hero figure or put a reticle or beacon on more than one panel per screen.
 - **Don't** count up, tween or interpolate money values; no money arithmetic in the browser.
 - **Don't** introduce a custom display or web font; the system sans is a deliberate choice.
+- **Don't** make the seam pulse frequent: each panel's seam pulses once every 120s, offset per panel, so a pulse is a rare event. Meter glints run on a 40s cycle.
 - **Don't** run a full-screen sweeping scan or radar line across the background. The chart plate's single arrival sweep and the skeleton scan are the only sweeps.
-- **Don't** move the ambient field or any full-screen layer with anything but transforms; never animate layout properties (top, left, width, height) in a loop.
+- **Don't** animate the ambient layer or any full-screen layer with anything but transform and opacity; never animate layout properties (top, left, width, height) in a loop.
 - **Don't** let status hues glow decoratively; amber and coral appear only with an active state.
 - **Don't** return to the flat, light admin card grid.
