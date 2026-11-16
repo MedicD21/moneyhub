@@ -662,6 +662,27 @@ export type SetAsideArgs = {
   p_category_id: Uuid | null;
 };
 
+/**
+ * Arguments of public.review_transaction (20261115000000): classification only, for any transaction.
+ * Sets exactly what is passed (null clears). p_resolve (default true) clears needs_review and review_question.
+ */
+export type ReviewTransactionArgs = {
+  p_id: Uuid;
+  p_category_id: Uuid | null;
+  p_note: string | null;
+  p_bill_occurrence_id: Uuid | null;
+  p_debt_id: Uuid | null;
+  p_resolve?: boolean;
+};
+
+/** Arguments of public.create_merchant_rule (20261115000000). Returns how many open review rows it sorted. */
+export type MerchantRuleArgs = {
+  p_pattern: string;
+  p_category_id: Uuid;
+  p_merchant?: string | null;
+  p_apply_to_open?: boolean;
+};
+
 export type ManualTransactionUpdateArgs = Omit<ManualTransactionArgs, 'p_account_id'> & { p_id: Uuid };
 
 type NoWrite = { [_ in never]: never };
@@ -721,6 +742,8 @@ export type Database = {
       update_envelope: { Args: { p_id: Uuid; p_name: string; p_is_active: boolean }; Returns: Uuid };
       create_set_aside: { Args: SetAsideArgs; Returns: Uuid };
       update_set_aside: { Args: SetAsideArgs & { p_id: Uuid; p_is_active: boolean }; Returns: Uuid };
+      review_transaction: { Args: ReviewTransactionArgs; Returns: Uuid };
+      create_merchant_rule: { Args: MerchantRuleArgs; Returns: number };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

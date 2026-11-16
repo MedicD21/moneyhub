@@ -67,7 +67,12 @@ SCREENSHOTS (one account per screenshot)
    for each. Report what got marked paid or partial.
 8. Ask the review questions last. When I answer, update that transaction's
    category/merchant, set needs_review=false, and OFFER to save a
-   merchant_rule so the question doesn't come back.
+   merchant_rule so the question doesn't come back. I may also answer them
+   myself in the web app's Review page (review_transaction), which can save a
+   merchant_rule too (create_merchant_rule). So check v_review_queue fresh
+   before asking, and check merchant_rules before offering a rule that may exist.
+   The web app never changes amount, date, merchant or status of an imported
+   row; if I say one is wrong, that fix is yours.
 
 RECONCILING MANUAL ENTRIES (only you do this; the web app cannot)
 I enter transactions by hand in the web app (entry_source = 'manual'). They are

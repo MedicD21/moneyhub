@@ -28,13 +28,13 @@ Not a bank-sync budgeting app. Data comes from bank screenshots read by a separa
 - Web app (Vite + React + TypeScript) on Vercel, mobile first, also used on desktop.
 - Supabase Postgres is the single source of truth; all math lives in SQL views.
 - A Claude chat project imports screenshots, reconciles transactions and maintains the debt plan. Its workflow is in `docs/CLAUDE_PROJECT_INSTRUCTIONS.md`; UI changes must not break it.
-- Screens: Dashboard, Transactions (Activity), Bills, Paychecks (with Set-asides), Spending, Debts, Envelopes. A global + button adds a manual transaction.
+- Screens: Dashboard, Transactions (Activity), Review, Bills, Paychecks (with Set-asides), Spending, Debts, Envelopes. A global + button adds a manual transaction.
 
 ## Capabilities and Constraints
 
 - **The database does all the math.** The browser only displays view columns. No money arithmetic in the UI.
-- **Writes are limited** to nine owner-checked database functions: manual transactions (add/edit/delete), cleared flag, envelope moves, envelope create/update, set-aside create/update.
-- **Reconciliation is chat-only**, never in the web app.
+- **Writes are limited** to eleven owner-checked database functions: manual transactions (add/edit/delete), cleared flag, envelope moves, envelope create/update, set-aside create/update, review a transaction (category, note, bill/debt link), create a merchant rule.
+- **Reconciliation is chat-only**, never in the web app. Imported and reconciled rows can be reclassified on the web, but their amount, date, merchant and status never change there.
 - **Terminology is fixed:**
   - *Envelope*: virtual savings pot only (rainy-day fund, locked savings, user-named goal envelopes). No real money moves.
   - *Set-aside*: a per-paycheck reservation. Never called an envelope.

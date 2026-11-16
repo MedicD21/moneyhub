@@ -2,8 +2,8 @@
 
 A React app over the Money Hub Supabase views. It reads with
 `.from(<view or table>).select(...)`, and every number on screen comes straight from a
-view column. Its only writes are manual transactions, envelope moves and envelope / set-aside
-settings, sent through nine narrow, owner-checked database functions (see "Write guarantees" below). The
+view column. Its only writes are manual transactions, classifying transactions (review inbox),
+merchant rules, envelope moves and envelope / set-aside settings, sent through eleven narrow, owner-checked database functions (see "Write guarantees" below). The
 database does all the math (see
 `../supabase/migrations/20261112000300_views.sql` and `…000400_paycheck_and_dashboard.sql`).
 
@@ -13,7 +13,7 @@ The **What if** page (`/what-if`) previews debt-payoff scenarios through the rea
 `simulate_debt_plan` RPC (strategy, extra monthly, lump sums, raise, overtime, early payoff,
 stopped payments). The scenario lives in the page URL; nothing is saved and the active plan is
 never changed. The RPC is called only from `src/lib/reads.ts`, and the write-surface guard test
-whitelists it separately from the nine writes. Inputs, Affirm principal estimates, the
+whitelists it separately from the eleven writes. Inputs, Affirm principal estimates, the
 affordability screen and the historical regression are in
 [debt simulation](../docs/debt-simulation.md).
 
@@ -51,7 +51,7 @@ missing or malformed the app shows a setup screen instead of crashing.
 ## Write guarantees
 
 The browser can never write a table. Tables and views are `SELECT`-only for the signed-in
-user. The only writes are nine `SECURITY DEFINER` functions that check the caller is the
+user. The only writes are eleven `SECURITY DEFINER` functions that check the caller is the
 app owner. The browser sends names, amounts and ids; the database validates them and computes
 every balance:
 
@@ -62,15 +62,23 @@ every balance:
 | `move_envelope_money` | Moves into or out of any envelope (virtual; no real money moves). A move in is refused if envelopes plus set-aside balances would exceed real cash (`20261113030000`) |
 | `create_envelope` / `update_envelope` | Envelopes page: new goal envelope (name only, starts at $0), rename, archive (balance must be $0), restore. The rainy-day fund and locked savings are fixed (`20261113040000`) |
 | `create_set_aside` / `update_set_aside` | Paychecks page, Set-asides section: create, edit, pause / resume. Never deleted. The balance stays derived in `v_set_asides` (`20261113050000`) |
+| `review_transaction` | Review page (`/review`) and "Review" / "Edit details" on imported or reconciled rows: category, note, bill or debt link, and resolving the review question. Works on any row; never changes amount, date, merchant, status, cleared or reconciliation (`20261115000000`) |
+| `create_merchant_rule` | "Always do this for [merchant]" in the review form: saves a case-insensitive pattern + category. Applied to future imports by `commit_screenshot_import`, and to other open uncategorized reviews that match (`20261115000000`) |
 
 - Manual rows are stored as `pending`, so balances count them until Claude's next screenshot import.
+- **Rows from the bank are classify-only.** Imported or reconciled rows open a details form with amount,
+  date and merchant read-only ("From your bank. Ask Claude to fix a wrong amount or date."). Open manual
+  rows keep the full edit.
+- **Review inbox.** `/review` lists `v_review_queue` newest first, one card at a time (Save and next / Skip).
+  It is in the desktop rail with a count from `v_dashboard.review_queue_count`; on phones it is reached from
+  the Dashboard "Needs attention > To review" row.
 - **Reconciled is Claude-only.** `reconcile_transactions` / `unreconcile_transactions` are not
   granted to the web role, and a trigger blocks web sessions from changing `reconciled`,
   from editing the amount, date, account or status of a reconciled row, and from deleting
   reconciled or imported rows.
 - `src/lib/writes.ts` is the only file that may call a database function.
   `tests/readonly-guard.test.ts` fails on any `.insert(`, `.update(`, `.upsert(` or `.delete(` in
-  `src/`, on `.rpc(` anywhere except `writes.ts`, on any function not in the whitelist of nine,
+  `src/`, on `.rpc(` anywhere except `writes.ts`, on any function not in the whitelist of eleven,
   and on any mention of the reconcile functions. ESLint has matching `no-restricted-syntax` rules.
 - `src/types/db.ts` gives the typed client `Insert`/`Update` types with no keys, so a direct
   table write would also fail to compile.
@@ -108,7 +116,7 @@ src/
   hooks/useParams.ts   URL search params as filter state
   types/db.ts          row types for every view, matching the SQL column names
   components/          layout/nav, cards, badges, query states, charts
-  pages/               Dashboard, Transactions, Bills, Paychecks, Spending, Debts
+  pages/               Dashboard, Transactions, Review, Bills, Paychecks, Spending, Debts
 ```
 
 Sign convention: transaction `amount` < 0 is money out (shown neutral),

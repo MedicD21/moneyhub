@@ -15,6 +15,7 @@ const Spending = lazy(() => import('./pages/Spending'));
 const Debts = lazy(() => import('./pages/Debts'));
 const WhatIf = lazy(() => import('./pages/WhatIf'));
 const Envelopes = lazy(() => import('./pages/Envelopes'));
+const Review = lazy(() => import('./pages/Review'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 
 function Splash() {
@@ -46,6 +47,7 @@ function Gate() {
             ['/debts', Debts],
             ['/what-if', WhatIf],
             ['/envelopes', Envelopes],
+            ['/review', Review],
             ['*', NotFound],
           ] as const
         ).map(([path, Page]) => (

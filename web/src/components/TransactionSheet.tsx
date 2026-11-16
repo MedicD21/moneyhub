@@ -15,9 +15,12 @@ import { Banner, Button, Field, inputClass } from './ui';
 import { Icon } from './Icon';
 import { useEntry } from './EntryContext';
 import { useVisualViewport } from '../hooks/useVisualViewport';
+import { ClassifyForm } from './ClassifyForm';
+import { isBankLocked } from '../lib/review';
 
 /**
- * Bottom sheet (mobile) / dialog (desktop) for adding or editing a manual transaction.
+ * Bottom sheet (mobile) / dialog (desktop) for adding or editing a manual transaction. Rows from the bank
+ * (imported or reconciled) open the classification-only form instead: category, note, bill or debt.
  * The form mounts fresh each time the sheet opens, so its state always starts from the right values.
  */
 export function TransactionSheet() {
@@ -37,6 +40,7 @@ export function TransactionSheet() {
   }, [sheet.open]);
 
   if (!sheet.open) return null;
+  const classify = sheet.editing !== null && isBankLocked(sheet.editing);
   const close = () => {
     if (!busy) closeSheet();
   };
@@ -54,11 +58,25 @@ export function TransactionSheet() {
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={sheet.editing ? 'Edit entry' : 'Add transaction'}
+        aria-label={classify ? 'Edit details' : sheet.editing ? 'Edit entry' : 'Add transaction'}
         className="glass glass-seam sheet-in relative max-h-full w-full max-w-lg overflow-y-auto overscroll-contain rounded-t-[26px] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:rounded-[26px] md:p-5"
         onFocus={keepFocusedFieldVisible}
       >
-        <EntryForm key={sheet.session} editing={sheet.editing} onBusy={setBusy} />
+        {classify && sheet.editing ? (
+          <ClassifyForm
+            key={sheet.session}
+            t={sheet.editing}
+            heading={sheet.editing.needs_review ? 'Review' : 'Edit details'}
+            submitLabel="Save"
+            onClose={closeSheet}
+            onBusy={setBusy}
+            onSaved={(o) => {
+              if (!o.ruleError) closeSheet();
+            }}
+          />
+        ) : (
+          <EntryForm key={sheet.session} editing={sheet.editing} onBusy={setBusy} />
+        )}
       </div>
     </div>
   );

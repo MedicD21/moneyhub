@@ -28,6 +28,8 @@ const ALLOWED_RPCS = [
   'update_envelope',
   'create_set_aside',
   'update_set_aside',
+  'review_transaction',
+  'create_merchant_rule',
 ];
 
 // Read-only RPCs (STABLE, never write tables). Called only from src/lib/reads.ts.
@@ -81,6 +83,11 @@ describe('write-surface guard', () => {
       .filter((file) => ![WRITES_FILE, READS_FILE].includes(relative(SRC, file)))
       .flatMap((file) => hits(readFileSync(file, 'utf8'), RPC_CALL).map((v) => `${relative(SRC, file)}:${v}`));
     expect(violations, `rpc() outside writes.ts:\n${violations.join('\n')}`).toEqual([]);
+  });
+
+  it('whitelists exactly eleven write functions', () => {
+    expect(ALLOWED_RPCS).toHaveLength(11);
+    expect(new Set(ALLOWED_RPCS).size).toBe(11);
   });
 
   it('writes.ts calls only whitelisted functions, by literal name', () => {

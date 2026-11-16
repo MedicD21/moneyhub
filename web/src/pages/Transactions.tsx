@@ -248,6 +248,12 @@ function TransactionRow({ t }: { t: VTransaction }) {
               {title}
             </span>
             {manual ? <Badge tone="accent">Manual</Badge> : t.status === 'pending' ? <Badge tone="warn">Pending</Badge> : null}
+            {t.reconciled ? (
+              <span className="text-subtle" title="Reconciled by Claude. Amount and date are locked.">
+                <Icon name="lock" size={13} aria-hidden="true" />
+                <span className="sr-only">Reconciled</span>
+              </span>
+            ) : null}
             {t.needs_review ? <Badge tone="warn">Needs review</Badge> : null}
           </div>
           <div className="mt-0.5 text-xs text-muted">
@@ -290,15 +296,18 @@ function TransactionRow({ t }: { t: VTransaction }) {
           <input type="checkbox" checked={t.reconciled} disabled readOnly className="h-5 w-5" aria-label="Reconciled (set only by Claude)" />
           Reconciled
         </label>
-        {manual && !t.reconciled ? (
-          <button
-            type="button"
-            onClick={() => openEdit(t)}
-            className="-mr-2 ml-auto inline-flex min-h-10 items-center gap-1 rounded-lg px-3 text-sm font-medium text-accent hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent"
-          >
-            <Icon name="edit" size={16} /> Edit
-          </button>
-        ) : null}
+        {/* Open manual entries get the full edit; bank rows (imported or reconciled) only their details. */}
+        <button
+          type="button"
+          onClick={() => openEdit(t)}
+          className={cx(
+            '-mr-2 ml-auto inline-flex min-h-11 items-center gap-1 rounded-lg px-3 text-sm font-medium hover:bg-surface-2 focus-visible:outline-2 focus-visible:outline-accent',
+            t.needs_review ? 'text-warn' : 'text-accent',
+          )}
+        >
+          <Icon name={t.needs_review ? 'check' : 'edit'} size={16} />
+          {manual && !t.reconciled ? 'Edit' : t.needs_review ? 'Review' : 'Edit details'}
+        </button>
       </div>
       {toggleError ? (
         <p role="alert" className="mt-1 text-xs text-danger">

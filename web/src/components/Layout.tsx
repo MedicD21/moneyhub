@@ -7,6 +7,9 @@ import { EntryProvider, useEntry } from './EntryContext';
 import { TransactionSheet } from './TransactionSheet';
 import { useVisualViewport } from '../hooks/useVisualViewport';
 import { LampField } from './LampField';
+import { useView } from '../hooks/useView';
+import type { VDashboard } from '../types/db';
+import { formatCount } from '../lib/format';
 
 const NAV: Array<{ to: string; label: string; short: string; icon: IconName; desktopOnly?: boolean }> = [
   { to: '/', label: 'Dashboard', short: 'Home', icon: 'home' },
@@ -18,6 +21,8 @@ const NAV: Array<{ to: string; label: string; short: string; icon: IconName; des
   { to: '/what-if', label: 'What if', short: 'What if', icon: 'chart', desktopOnly: true },
   // Reached from the Dashboard card on phones (the dock has room for six tabs).
   { to: '/envelopes', label: 'Envelopes', short: 'Envelopes', icon: 'lock', desktopOnly: true },
+  // Phones reach it from the Dashboard "Needs attention > To review" row.
+  { to: '/review', label: 'Review', short: 'Review', icon: 'check', desktopOnly: true },
 ];
 
 const MOBILE_NAV = NAV.filter((item) => !item.desktopOnly);
@@ -112,8 +117,18 @@ export function Layout() {
   );
 }
 
+/** Open review count for the nav badge, straight from v_dashboard. */
+function useReviewCount(): number {
+  const { version } = useEntry();
+  const dash = useView<Pick<VDashboard, 'review_queue_count'>>(`nav:review_count:${version}`, (sb) =>
+    sb.from('v_dashboard').select('review_queue_count').limit(1),
+  );
+  return dash.data?.[0]?.review_queue_count ?? 0;
+}
+
 function Shell() {
   const { session } = useAuth();
+  const reviewCount = useReviewCount();
   const { keyboardOpen } = useVisualViewport();
   const { pathname } = useLocation();
   const dockIndex = activeIndex(pathname, MOBILE_NAV);
@@ -149,6 +164,12 @@ function Shell() {
                 <>
                   <Icon name={item.icon} size={18} className={isActive ? 'text-action-bright' : 'transition-transform duration-300 group-hover:translate-x-0.5'} />
                   <span className="flex-1">{item.label}</span>
+                  {item.to === '/review' && reviewCount > 0 ? (
+                    <span className="rounded-full border border-warn-line bg-warn-bg px-2 py-0.5 text-[11px] font-semibold text-warn tabular-nums">
+                      {formatCount(reviewCount)}
+                      <span className="sr-only"> to review</span>
+                    </span>
+                  ) : null}
                   {isActive ? <span className="nav-dot" aria-hidden="true" /> : null}
                 </>
               )}

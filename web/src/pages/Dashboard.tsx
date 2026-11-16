@@ -302,7 +302,7 @@ function DashboardBody({ d, f }: { d: VDashboard; f: VPayPeriodForecast | null }
         <Card title="Needs attention" icon="info" iconTone={d.review_queue_count > 0 || d.balance_check_issues > 0 ? 'warn' : d.low_balance_accounts > 0 ? 'danger' : 'muted'}>
           <ul className="space-y-1 text-sm">
             <li className="flex justify-between gap-2">
-              <Link to="/transactions?review=1" className="text-accent underline underline-offset-2 hover:text-ink">
+              <Link to="/review" className="inline-flex min-h-10 items-center text-accent underline underline-offset-2 hover:text-ink">
                 To review
               </Link>
               <span className={cx('font-semibold tabular-nums', d.review_queue_count > 0 ? 'text-warn' : 'text-ink')}>

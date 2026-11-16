@@ -1,15 +1,18 @@
 /**
  * The web app's only write path (and the only file allowed to call database functions; see tests/readonly-guard.test.ts
- * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of five
- * nine narrow, owner-checked SECURITY DEFINER functions:
+ * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of eleven
+ * narrow, owner-checked SECURITY DEFINER functions:
  *
  *   add_manual_transaction / update_manual_transaction / delete_manual_transaction   (20261113000000)
  *   set_transaction_cleared                                                           (20261113000000)
  *   move_envelope_money                                                               (20261113030000)
  *   create_envelope / update_envelope                                                 (20261113040000)
  *   create_set_aside / update_set_aside                                               (20261113050000)
+ *   review_transaction / create_merchant_rule                                         (20261115000000)
  *
- * None of them can set `reconciled`; only Claude can (a trigger blocks it for any web session). The database
+ * None of them can set `reconciled`; only Claude can (a trigger blocks it for any web session). Rows from the bank
+ * (imported or reconciled) can only be reclassified here: their amount, date, merchant and status never change from
+ * the web app. The database
  * validates every argument again, so the checks here only exist to give friendlier messages.
  *
  * Each call resolves to a result object and never throws, so forms can show the message inline.
@@ -215,6 +218,64 @@ export async function updateSetAside(id: Uuid, input: SetAsideInput, isActive: b
     const { error } = await supabase.rpc('update_set_aside', { ...setAsideArgs(input), p_id: id, p_is_active: isActive });
     if (error) return fail(error);
     return { ok: true, data: undefined };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+export type ReviewInput = {
+  categoryId: Uuid | null;
+  note: string | null;
+  billOccurrenceId: Uuid | null;
+  debtId: Uuid | null;
+  /** true (default) clears the review flag and question */
+  resolve?: boolean;
+};
+
+/**
+ * Classify any transaction (imported or manual, reconciled or not): category, note, bill or debt link.
+ * Never changes amount, date, merchant, status, cleared or reconciliation.
+ */
+export async function reviewTransaction(id: Uuid, input: ReviewInput): Promise<WriteResult<Uuid>> {
+  if (!supabase) return NO_CLIENT;
+  try {
+    const { data, error } = await supabase.rpc('review_transaction', {
+      p_id: id,
+      p_category_id: input.categoryId,
+      p_note: input.note,
+      p_bill_occurrence_id: input.billOccurrenceId,
+      p_debt_id: input.debtId,
+      p_resolve: input.resolve ?? true,
+    });
+    if (error) return fail(error);
+    return { ok: true, data };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+export type MerchantRuleInput = {
+  /** case-insensitive text found in the bank description */
+  pattern: string;
+  categoryId: Uuid;
+  merchant?: string | null;
+  /** also categorize other open, uncategorized review rows that match */
+  applyToOpen?: boolean;
+};
+
+/** Save "always do this for this merchant". Resolves to how many open review rows the rule also sorted. */
+export async function createMerchantRule(input: MerchantRuleInput): Promise<WriteResult<number>> {
+  if (!supabase) return NO_CLIENT;
+  if (input.pattern.trim().length < 2) return { ok: false, error: 'Enter at least 2 characters to match.' };
+  try {
+    const { data, error } = await supabase.rpc('create_merchant_rule', {
+      p_pattern: input.pattern,
+      p_category_id: input.categoryId,
+      p_merchant: input.merchant ?? null,
+      p_apply_to_open: input.applyToOpen ?? false,
+    });
+    if (error) return fail(error);
+    return { ok: true, data };
   } catch (e) {
     return networkFail(e);
   }
