@@ -26,8 +26,8 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       // Hard rule: tables are never written from the browser. The only write path is a fixed set of
-      // owner-checked RPCs, and `.rpc(` is allowed only in src/lib/writes.ts (the twelve writes) and
-      // src/lib/reads.ts (the one read-only simulator), see overrides below.
+      // owner-checked RPCs, and `.rpc(` is allowed only in src/lib/writes.ts (the thirteen writes) and
+      // src/lib/reads.ts (the read-only simulator and planner), see overrides below.
       'no-restricted-syntax': [
         'error',
         {

@@ -713,6 +713,59 @@ export type ManualTransactionArgs = {
   p_debt_id?: Uuid | null;
 };
 
+/** One paycheck's entry in a shortfall plan (public.save_shortfall_plan / shortfall_plan_forecast). */
+export type ShortfallPlanEntry = { pay_date: IsoDate; ot_hours: number; spend: number };
+
+/** One paycheck period of public.shortfall_plan_forecast (20261127210000). All amounts are computed in the database. */
+export type ShortfallPeriod = {
+  pay_date: IsoDate;
+  period_end: IsoDate;
+  next_pay_date: IsoDate;
+  is_current: boolean;
+  /** received = already paid; actual = the real net is entered; open = can take planned overtime; past = cannot */
+  status: 'received' | 'actual' | 'open' | 'past';
+  expected_net: number;
+  income_amount: number;
+  ot_editable: boolean;
+  ot_hours: number;
+  ot_net: number;
+  /** planned hours were ignored because the paycheck is paid or its real net is entered */
+  ot_replaced: boolean;
+  spend_editable: boolean;
+  spend: number;
+  low_balance: number;
+  low_date: IsoDate;
+  baseline_low_balance: number;
+  shortfall: number;
+  spend_room: number;
+  suggested_hours: number | null;
+  suggested_net: number | null;
+  unfixable_shortfall: number;
+};
+
+export type ShortfallSummary = {
+  today: IsoDate;
+  floor: number;
+  extra_hour_net: number;
+  source: 'saved' | 'draft' | 'none';
+  saved_at: string | null;
+  saved_plan: ShortfallPlanEntry[];
+  hours_planned: number;
+  ot_net_planned: number;
+  spend_planned: number;
+  lowest_balance: number | null;
+  lowest_date: IsoDate | null;
+  baseline_lowest_balance: number | null;
+  baseline_lowest_date: IsoDate | null;
+  baseline_shortfall: number;
+  remaining_shortfall: number;
+  suggested_hours_total: number;
+  suggested_net_total: number;
+  unfixable_shortfall: number;
+};
+
+export type ShortfallPlanResult = { plan_summary: ShortfallSummary; plan_periods: ShortfallPeriod[] };
+
 /** Arguments of public.update_manual_transaction (the account cannot be changed). */
 export type SetAsideArgs = {
   p_name: string;
@@ -788,10 +841,13 @@ export type Database = {
     };
     /**
      * Owner-checked RPCs. Writes are called only from src/lib/writes.ts.
-     * simulate_debt_plan is read-only; its only caller is src/lib/reads.ts (What if page).
+     * simulate_debt_plan and shortfall_plan_forecast are read-only; their only caller is src/lib/reads.ts
+     * (What if and Planner pages).
      */
     Functions: {
       simulate_debt_plan: { Args: { p_params?: DebtSimulationParams }; Returns: DebtSimulationResult };
+      shortfall_plan_forecast: { Args: { p_paychecks?: ShortfallPlanEntry[] | null }; Returns: ShortfallPlanResult };
+      save_shortfall_plan: { Args: { p_paychecks: ShortfallPlanEntry[] }; Returns: string };
       add_manual_transaction: { Args: ManualTransactionArgs; Returns: Uuid };
       update_manual_transaction: { Args: ManualTransactionUpdateArgs; Returns: Uuid };
       delete_manual_transaction: { Args: { p_id: Uuid }; Returns: undefined };

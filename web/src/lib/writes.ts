@@ -1,7 +1,7 @@
 /**
  * The web app's only write path (and the only file allowed to call database functions; see tests/readonly-guard.test.ts
- * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of twelve
- * narrow, owner-checked SECURITY DEFINER functions (twelve):
+ * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of the
+ * narrow, owner-checked SECURITY DEFINER functions (thirteen):
  *
  *   add_manual_transaction / update_manual_transaction / delete_manual_transaction   (20261113000000)
  *   set_transaction_cleared                                                           (20261113000000)
@@ -10,6 +10,7 @@
  *   create_set_aside / update_set_aside                                               (20261113050000)
  *   delete_set_aside (paused set-asides only)                                         (20261127190000)
  *   review_transaction / create_merchant_rule                                         (20261115000000)
+ *   save_shortfall_plan (the Planner's saved plan: hours and spending per paycheck)  (20261127210000)
  *
  * None of them can set `reconciled`; only Claude can (a trigger blocks it for any web session). Rows from the bank
  * (imported or reconciled) can only be reclassified here: their amount, date, merchant and status never change from
@@ -19,7 +20,7 @@
  * Each call resolves to a result object and never throws, so forms can show the message inline.
  */
 import { supabase } from './supabase';
-import type { IsoDate, SetAsideArgs, Uuid } from '../types/db';
+import type { IsoDate, SetAsideArgs, ShortfallPlanEntry, Uuid } from '../types/db';
 
 export type WriteResult<T = void> = { ok: true; data: T } | { ok: false; error: string };
 
@@ -287,6 +288,21 @@ export async function createMerchantRule(input: MerchantRuleInput): Promise<Writ
       p_merchant: input.merchant ?? null,
       p_apply_to_open: input.applyToOpen ?? false,
     });
+    if (error) return fail(error);
+    return { ok: true, data };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+/**
+ * Save the Planner's plan (replaces the stored one). Only hours and spending per paycheck are stored; the
+ * database validates them and zero rows are dropped. Resolves to the save time (ISO timestamp).
+ */
+export async function saveShortfallPlan(entries: ShortfallPlanEntry[]): Promise<WriteResult<string>> {
+  if (!supabase) return NO_CLIENT;
+  try {
+    const { data, error } = await supabase.rpc('save_shortfall_plan', { p_paychecks: entries });
     if (error) return fail(error);
     return { ok: true, data };
   } catch (e) {

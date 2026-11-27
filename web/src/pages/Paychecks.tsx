@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { useView } from "../hooks/useView";
 import { useEntry } from "../components/EntryContext";
 import { RainyDayHint } from "../components/RainyDayHint";
@@ -43,6 +44,11 @@ export default function Paychecks() {
       <PageHeader
         title="Paychecks"
         description="What each paycheck has to cover, and how much to hold back so short paychecks and bill clusters are covered."
+        actions={
+          <Link to="/planner" className="btn-lit inline-flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold">
+            Plan overtime
+          </Link>
+        }
       />
       <SetAsidesSection />
       <QueryState

@@ -18,6 +18,8 @@ const NAV: Array<{ to: string; label: string; short: string; icon: IconName; des
   { to: '/paychecks', label: 'Paychecks', short: 'Paychecks', icon: 'wallet' },
   { to: '/spending', label: 'Spending', short: 'Spending', icon: 'chart' },
   { to: '/debts', label: 'Debts', short: 'Debts', icon: 'card' },
+  // Phones reach it from the Paychecks page header (the dock has room for six tabs).
+  { to: '/planner', label: 'Planner', short: 'Planner', icon: 'wallet', desktopOnly: true },
   { to: '/what-if', label: 'What if', short: 'What if', icon: 'chart', desktopOnly: true },
   // Reached from the Dashboard card on phones (the dock has room for six tabs).
   { to: '/envelopes', label: 'Envelopes', short: 'Envelopes', icon: 'lock', desktopOnly: true },
