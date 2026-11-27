@@ -10,7 +10,9 @@ database does all the math (see
 Stack: React 18, TypeScript (strict), Vite, Tailwind CSS v4, Recharts, supabase-js v2, react-router.
 
 The **Planner** page (`/planner`, desktop side nav, and the "Plan overtime" button on Paychecks) lists every upcoming paycheck
-with two inputs: extra overtime hours and spending money (food, gas). The read-only
+with two inputs: extra overtime hours and spending money (food, gas). Each card names the work period
+the paycheck pays for (14 days ending 5 days before the scheduled payday, so Dec 9 pays Nov 21 - Dec 4),
+so it is clear which overtime shifts belong on which check. The read-only
 `shortfall_plan_forecast` RPC layers them onto the daily forecast (overtime at `app_settings.extra_hour_net`
 per hour on that paycheck, spending held back from the start of its pay period) and returns the lowest
 balance, the room left to spend, and suggested extra hours per paycheck. An unsaved draft is recalculated as

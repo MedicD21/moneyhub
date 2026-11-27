@@ -722,6 +722,9 @@ export type ShortfallPeriod = {
   period_end: IsoDate;
   next_pay_date: IsoDate;
   is_current: boolean;
+  /** The 14-day work period this paycheck pays for (ends 5 days before the scheduled payday; 20261127220000). */
+  work_start: IsoDate;
+  work_end: IsoDate;
   /** received = already paid; actual = the real net is entered; open = can take planned overtime; past = cannot */
   status: 'received' | 'actual' | 'open' | 'past';
   expected_net: number;
