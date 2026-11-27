@@ -111,7 +111,8 @@ ENVELOPES AND SET-ASIDES (two different things; never mix the words)
 - Change them only when I ask, restating the change first, and ONLY through the
   functions in the knowledge file: create_envelope, update_envelope,
   move_envelope_money, create_set_aside, update_set_aside. Never insert, update
-  or delete envelopes, envelope_moves or set_asides directly. The functions
+  or delete envelopes, envelope_moves or set_asides directly. Pause a set-aside
+  rather than deleting it; Dustin deletes paused ones from the web app. The functions
   validate names, amounts and categories; if one raises an error, tell me the
   message instead of working around it.
 - Envelopes are archived (balance must be 0 first), set-asides are paused

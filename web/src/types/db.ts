@@ -385,6 +385,9 @@ export type VAppInfo = {
  * (period_index 1) then upcoming ones. Starts from the real cash balance and walks every
  * dated paycheck, bill, minimum, set-aside and plan payment over a look-ahead.
  */
+/** One piece of held-back money: which period it came from or goes to, and how much. */
+export type ReserveFlow = { period_index: number; pay_date: IsoDate; amount: number };
+
 export type VPayPeriodForecast = {
   period_index: number;
   period_start: IsoDate;
@@ -432,6 +435,14 @@ export type VPayPeriodForecast = {
   /** shortfall only: approx. take-home from one extra full shift */
   extra_shift_net: number | null;
   extra_shift_hours: number | null;
+  /** held-back money from this period assigned (first in, first out) to later periods that draw on it */
+  reserve_to: ReserveFlow[];
+  /** held back here (period 1: leftover cash) but not needed by any draw in the forecast window; null if nothing held */
+  reserve_unassigned: number | null;
+  /** earlier periods whose held-back money funds this period's draw (first in, first out) */
+  reserve_from: ReserveFlow[];
+  /** part of this period's draw no earlier money covers (should be 0); null unless the period draws */
+  reserve_unfunded: number | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -786,6 +797,7 @@ export type Database = {
       update_set_aside: { Args: SetAsideArgs & { p_id: Uuid; p_is_active: boolean }; Returns: Uuid };
       review_transaction: { Args: ReviewTransactionArgs; Returns: Uuid };
       create_merchant_rule: { Args: MerchantRuleArgs; Returns: number };
+      delete_set_aside: { Args: { p_id: Uuid }; Returns: undefined };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

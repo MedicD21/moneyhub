@@ -1,13 +1,14 @@
 /**
  * The web app's only write path (and the only file allowed to call database functions; see tests/readonly-guard.test.ts
- * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of eleven
- * narrow, owner-checked SECURITY DEFINER functions:
+ * and eslint.config.js). Tables are SELECT-only for the signed-in user. Everything here calls one of twelve
+ * narrow, owner-checked SECURITY DEFINER functions (twelve):
  *
  *   add_manual_transaction / update_manual_transaction / delete_manual_transaction   (20261113000000)
  *   set_transaction_cleared                                                           (20261113000000)
  *   move_envelope_money                                                               (20261113030000)
  *   create_envelope / update_envelope                                                 (20261113040000)
  *   create_set_aside / update_set_aside                                               (20261113050000)
+ *   delete_set_aside (paused set-asides only)                                         (20261127190000)
  *   review_transaction / create_merchant_rule                                         (20261115000000)
  *
  * None of them can set `reconciled`; only Claude can (a trigger blocks it for any web session). Rows from the bank
@@ -210,12 +211,24 @@ export async function createSetAside(input: SetAsideInput): Promise<WriteResult<
   }
 }
 
-/** Edit a set-aside, or pause (isActive false) / resume it. Set-asides are never deleted. */
+/** Edit a set-aside, or pause (isActive false) / resume it. Delete is a separate step: deleteSetAside. */
 export async function updateSetAside(id: Uuid, input: SetAsideInput, isActive: boolean): Promise<WriteResult> {
   if (!supabase) return NO_CLIENT;
   if (!input.name.trim()) return { ok: false, error: 'Enter a name.' };
   try {
     const { error } = await supabase.rpc('update_set_aside', { ...setAsideArgs(input), p_id: id, p_is_active: isActive });
+    if (error) return fail(error);
+    return { ok: true, data: undefined };
+  } catch (e) {
+    return networkFail(e);
+  }
+}
+
+/** Permanently delete a paused set-aside. The database refuses an active one, or one with bank-reconciled transactions tagged to it. */
+export async function deleteSetAside(id: Uuid): Promise<WriteResult> {
+  if (!supabase) return NO_CLIENT;
+  try {
+    const { error } = await supabase.rpc('delete_set_aside', { p_id: id });
     if (error) return fail(error);
     return { ok: true, data: undefined };
   } catch (e) {
