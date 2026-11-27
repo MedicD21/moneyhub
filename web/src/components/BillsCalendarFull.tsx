@@ -6,8 +6,6 @@ import {
   addMonths,
   daysInMonth,
   formatCurrency,
-  formatCurrencyCompact,
-  formatCurrencyWhole,
   formatDate,
   formatMonth,
   monthStart,
@@ -176,8 +174,8 @@ export function BillsCalendarFull({
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5">
-        <div className="mx-auto grid max-w-[96rem] gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-2 py-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-4 xl:px-6">
+        <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,1fr)_24rem] 2xl:grid-cols-[minmax(0,1fr)_28rem]">
           <div className="min-w-0 space-y-3">
             {bills.error ? <ErrorState label="bills" message={bills.error} onRetry={bills.reload} /> : null}
             {balances.error ? (
@@ -267,7 +265,7 @@ function Grid({
 
   return (
     <div>
-      <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-medium text-muted" aria-hidden="true">
+      <div className="grid grid-cols-7 gap-1 text-center text-[11px] xl:gap-2 xl:text-sm font-medium text-muted" aria-hidden="true">
         {WEEKDAYS.map((w) => (
           <div key={w} className="py-1">
             <span className="sm:hidden">{w.charAt(0)}</span>
@@ -275,9 +273,9 @@ function Grid({
           </div>
         ))}
       </div>
-      <ol className="grid grid-cols-7 gap-1" aria-label={`Calendar for ${formatMonth(month)}`}>
+      <ol className="grid grid-cols-7 gap-1 xl:gap-2" aria-label={`Calendar for ${formatMonth(month)}`}>
         {cells.map((iso, i) => {
-          if (!iso) return <li key={`pad-${i}`} aria-hidden="true" className="min-h-16 sm:min-h-28" />;
+          if (!iso) return <li key={`pad-${i}`} aria-hidden="true" className="min-h-16 sm:min-h-28 xl:min-h-36 2xl:min-h-44" />;
           const day = parseIsoDate(iso)?.day ?? 0;
           const bills = billsByDay.get(iso) ?? [];
           const row = balanceByDay.get(iso) ?? null;
@@ -301,18 +299,17 @@ function Grid({
                 aria-label={label}
                 aria-pressed={isSelected}
                 className={cx(
-                  'flex min-h-16 w-full min-w-0 flex-col rounded-xl border p-1 text-left transition-colors sm:min-h-28 sm:p-1.5',
+                  'flex min-h-16 w-full min-w-0 flex-col rounded-xl border p-1 text-left transition-colors sm:min-h-28 sm:p-1.5 xl:min-h-36 xl:p-2 2xl:min-h-44',
                   'focus-visible:outline-2 focus-visible:outline-accent-bright',
                   isSelected ? 'border-accent bg-accent-soft' : isToday ? 'nav-lit border-transparent' : 'border-line',
                   !isSelected && (chipCount > 0 ? 'bg-surface-2' : 'bg-black/20'),
                 )}
               >
                 <span className="flex items-start justify-between gap-1">
-                  <span className={cx('text-[11px] leading-4 tabular-nums', isToday ? 'font-bold text-accent-bright' : 'text-muted')}>{day}</span>
+                  <span className={cx('text-[11px] leading-4 tabular-nums xl:text-sm', isToday ? 'font-bold text-accent-bright' : 'text-muted')}>{day}</span>
                   {row ? (
-                    <span className={cx('text-[10px] leading-4 font-semibold tabular-nums sm:text-xs', balanceTone(row.projected_balance, floor))}>
-                      <span className="sm:hidden">{formatCurrencyCompact(row.projected_balance)}</span>
-                      <span className="hidden sm:inline">{formatCurrencyWhole(row.projected_balance)}</span>
+                    <span className={cx('text-[9px] leading-4 font-semibold tabular-nums sm:text-xs xl:text-sm', balanceTone(row.projected_balance, floor))}>
+                      {formatCurrency(row.projected_balance)}
                     </span>
                   ) : null}
                 </span>
@@ -337,10 +334,10 @@ function Grid({
                         <span
                           key={b.occurrence_id}
                           title={`${b.bill_name} · ${formatCurrency(b.expected_amount)}`}
-                          className={cx('flex min-w-0 justify-between gap-1 rounded border px-1 text-[10.5px] leading-4', CHIP[visualOf(b)])}
+                          className={cx('flex min-w-0 justify-between gap-1 rounded border px-1 text-[10.5px] leading-4 xl:text-xs xl:leading-5', CHIP[visualOf(b)])}
                         >
                           <span className="truncate">{b.bill_name}</span>
-                          <span className="shrink-0 tabular-nums">{formatCurrencyWhole(b.expected_amount)}</span>
+                          <span className="shrink-0 tabular-nums">{formatCurrency(b.expected_amount)}</span>
                         </span>
                       ))}
                       {extras.slice(0, Math.max(MAX_CHIPS - bills.length, 0)).map((e, k) => (
@@ -348,15 +345,15 @@ function Grid({
                           key={`${e.type}-${e.name}-${k}`}
                           title={`${eventLabel(e)} · ${formatCurrency(e.amount)}`}
                           className={cx(
-                            'flex min-w-0 justify-between gap-1 rounded border px-1 text-[10.5px] leading-4',
+                            'flex min-w-0 justify-between gap-1 rounded border px-1 text-[10.5px] leading-4 xl:text-xs xl:leading-5',
                             e.type === 'income' ? 'border-ok-line bg-ok-bg text-pos' : 'border-dashed border-line text-muted',
                           )}
                         >
                           <span className="truncate">{eventLabel(e)}</span>
-                          <span className="shrink-0 tabular-nums">{formatCurrencyWhole(e.amount)}</span>
+                          <span className="shrink-0 tabular-nums">{formatCurrency(e.amount)}</span>
                         </span>
                       ))}
-                      {chipCount > MAX_CHIPS ? <span className="px-1 text-[10.5px] text-muted">+{chipCount - MAX_CHIPS} more</span> : null}
+                      {chipCount > MAX_CHIPS ? <span className="px-1 text-[10.5px] text-muted xl:text-xs">+{chipCount - MAX_CHIPS} more</span> : null}
                     </span>
                   </>
                 ) : null}
