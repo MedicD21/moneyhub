@@ -293,14 +293,20 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
                 total={p.extra_debt}
                 empty="No rollover or extra payment this period."
               >
-                {extra.map((x) => (
-                  <ItemLine
-                    key={x.name}
-                    name={x.name}
-                    meta={`${formatCurrency(x.extra_monthly)} this month (rollover + extra) over ${formatCount(x.paydays_per_year)} paydays a year`}
-                    amount={x.amount}
-                  />
-                ))}
+                {extra.map((x) => {
+                  const targets = x.targets ?? [];
+                  const goesTo = targets.length
+                    ? `Goes to ${targets.map((t) => `${t.name} (${formatCurrency(t.amount)})`).join(", ")}. `
+                    : "";
+                  return (
+                    <ItemLine
+                      key={x.name}
+                      name={x.name}
+                      meta={`${goesTo}${formatCurrency(x.extra_monthly)} this month (rollover + extra) over ${formatCount(x.paydays_per_year)} paydays a year`}
+                      amount={x.amount}
+                    />
+                  );
+                })}
               </ItemGroup>
 
               {f ? <ForecastBox f={f} /> : null}
