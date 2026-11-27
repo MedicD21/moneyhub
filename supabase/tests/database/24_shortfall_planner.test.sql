@@ -13,7 +13,7 @@ truncate public.app_settings, public.accounts, public.import_batches, public.cat
   public.bills, public.bill_occurrences, public.debts, public.debt_balances, public.set_asides,
   public.debt_plans, public.envelopes, public.shortfall_plans, public.pay_date_overrides cascade;
 grant execute on all functions in schema extensions to anon, authenticated;
-select plan(30);
+select plan(32);
 
 insert into auth.users (id, email) values ('11111111-1111-1111-1111-111111111111', 'owner@test.local');
 select public.bootstrap_owner('owner@test.local');
@@ -133,6 +133,9 @@ select throws_ok($$select * from public.shortfall_plan_forecast('[{"pay_date":"2
 reset role;
 insert into public.pay_date_overrides (income_source_id, scheduled_date, actual_date, actual_net)
 select id, '2026-04-03', '2026-04-03', 2100 from public.income_sources where name = 'Job';
+-- a payday moved a day early (no new amount): the work period still follows the scheduled date
+insert into public.pay_date_overrides (income_source_id, scheduled_date, actual_date, actual_net)
+select id, '2026-04-17', '2026-04-16', null from public.income_sources where name = 'Job';
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
 select results_eq(
@@ -142,8 +145,20 @@ select results_eq(
   $$values ('actual'::text, 0::numeric, true)$$,
   'once the real net is entered, planned OT for that paycheck is ignored (the actual already includes it)');
 select ok((select (p->>'spend_room')::numeric from public.shortfall_plan_forecast('[]') f, jsonb_array_elements(f.plan_periods) p
-            where p->>'pay_date' = '2026-04-17') >= 0,
+            where p->>'pay_date' = '2026-04-16') >= 0,
           'spend_room is never negative');
+
+-- ---------------------------------------------------------------- work period each paycheck pays for
+select results_eq(
+  $$select p->>'work_start', p->>'work_end'
+      from public.shortfall_plan_forecast('[]') f, jsonb_array_elements(f.plan_periods) p where p->>'pay_date' = '2026-03-20'$$,
+  $$values ('2026-03-02'::text, '2026-03-15'::text)$$,
+  'a paycheck pays for the 14 days ending 5 days before its scheduled date (03-20 pays 03-02 to 03-15)');
+select results_eq(
+  $$select p->>'work_start', p->>'work_end'
+      from public.shortfall_plan_forecast('[]') f, jsonb_array_elements(f.plan_periods) p where p->>'pay_date' = '2026-04-16'$$,
+  $$values ('2026-03-30'::text, '2026-04-12'::text)$$,
+  'a payday moved early keeps the work period of its scheduled date (paid 04-16, scheduled 04-17: 03-30 to 04-12)');
 
 select * from finish();
 rollback;

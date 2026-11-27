@@ -196,12 +196,12 @@ function PaycheckCard({ p, row, onChange }: { p: ShortfallPeriod; row: PlannerDr
   return (
     <Card
       title={`Paycheck ${formatDate(p.pay_date, 'weekday')}`}
-      subtitle={`${formatDateRange(p.pay_date, p.period_end)} · ${formatCurrency(p.income_amount)}`}
+      subtitle={`Pays for work ${formatDateRange(p.work_start, p.work_end)} · ${formatCurrency(p.income_amount)}`}
       action={statusBadge(p)}
       tone={short ? 'danger' : 'default'}
     >
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Extra overtime hours">
+        <Field label={`Extra overtime hours worked ${formatDateRange(p.work_start, p.work_end)}`}>
           <input
             className={inputClass}
             inputMode="decimal"
@@ -232,7 +232,9 @@ function PaycheckCard({ p, row, onChange }: { p: ShortfallPeriod; row: PlannerDr
             onChange={(e) => onChange({ ...row, spend: sanitizeAmountInput(e.target.value) })}
           />
           <span className="font-normal">
-            {p.spend_editable ? 'Held back from the start of this pay period' : 'This pay period is over'}
+            {p.spend_editable
+              ? `Held back for ${formatDateRange(p.pay_date, p.period_end)}, the days until your next paycheck`
+              : 'This pay period is over'}
           </span>
         </Field>
       </div>
