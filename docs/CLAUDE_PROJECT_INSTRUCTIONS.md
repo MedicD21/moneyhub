@@ -143,6 +143,10 @@ FORECASTS AND DEBT PLANS
   The result also carries monthly_balances,
   defaults and a forecast affordability screen (the web app's What if page shows them);
   quote affordability only from those fields, never from your own arithmetic.
+- The web app's Planner stores Dustin's overtime and spending plan in shortfall_plans. It is his
+  scratch plan: never write or delete it from chat. Read-only
+  shortfall_plan_forecast(jsonb) can answer "how many overtime hours do I still need"; quote its
+  numbers, never your own arithmetic.
 - State assumptions: start month, balances as-of date, APRs (and promo ends),
   whether new charges stop.
 - Save to debt_plans ONLY when I say "save this plan" (template in the

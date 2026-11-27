@@ -267,6 +267,7 @@ Functions:
   - `extra_debt` = active `debt_plans.extra_monthly` × 12 / paychecks per year
   - **`safe_to_spend` = expected_net − unpaid bills − minimums − set-asides − extra_debt**
   - `shortfall` boolean if negative
+- `shortfall_plan_forecast(p_paychecks jsonb default null)` (read-only) is the Planner's calculator: it layers planned overtime (`extra_hour_net` per hour, on that paycheck) and planned spending (held back from the start of the pay period) onto `daily_balance_forecast`, returns one summary plus one row per paycheck period (lowest balance, spend room, suggested extra hours, unfixable shortfall), and ignores overtime on a paycheck that is paid or whose real net is entered. `null` reads the saved plan in `shortfall_plans`; `save_shortfall_plan(jsonb)` is the only write. Neither changes `pay_period_forecast` or the Dashboard.
 - `v_pay_periods` (view over `pay_dates` for −2 to +6 periods) feeds the web app's paycheck timeline, with `safe_to_spend` per period.
 - `ensure_bill_occurrences(p_through date default (current_date + 60)) returns int` creates any missing `bill_occurrences` up to the given date. It's idempotent via the unique (bill_id, due_date) constraint. Clamp `due_day` 29–31 to the month's last day.
 - `pg_cron`: run `ensure_bill_occurrences()` daily at 05:00. **This is the only scheduled job.**

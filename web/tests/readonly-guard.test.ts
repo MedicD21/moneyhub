@@ -31,10 +31,11 @@ const ALLOWED_RPCS = [
   'delete_set_aside',
   'review_transaction',
   'create_merchant_rule',
+  'save_shortfall_plan',
 ];
 
 // Read-only RPCs (STABLE, never write tables). Called only from src/lib/reads.ts.
-const ALLOWED_READ_RPCS = ['simulate_debt_plan'];
+const ALLOWED_READ_RPCS = ['simulate_debt_plan', 'shortfall_plan_forecast'];
 
 function walk(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -86,9 +87,9 @@ describe('write-surface guard', () => {
     expect(violations, `rpc() outside writes.ts:\n${violations.join('\n')}`).toEqual([]);
   });
 
-  it('whitelists exactly twelve write functions', () => {
-    expect(ALLOWED_RPCS).toHaveLength(12);
-    expect(new Set(ALLOWED_RPCS).size).toBe(12);
+  it('whitelists exactly thirteen write functions', () => {
+    expect(ALLOWED_RPCS).toHaveLength(13);
+    expect(new Set(ALLOWED_RPCS).size).toBe(13);
   });
 
   it('writes.ts calls only whitelisted functions, by literal name', () => {
