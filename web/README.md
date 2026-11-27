@@ -116,6 +116,8 @@ src/
   hooks/useParams.ts   URL search params as filter state
   types/db.ts          row types for every view, matching the SQL column names
   components/          layout/nav, cards, badges, query states, charts
+  components/BillsCalendarFull.tsx  full-screen bills calendar (Bills page, Calendar button): bills from v_bill_status,
+                       projected end-of-day spendable balance per day from v_daily_balance_forecast
   pages/               Dashboard, Transactions, Review, Bills, Paychecks, Spending, Debts
 ```
 

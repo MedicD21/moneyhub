@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useView } from '../hooks/useView';
 import { useEntry } from '../components/EntryContext';
 import { useQueryParams } from '../hooks/useParams';
@@ -20,6 +21,7 @@ import { cx } from '../lib/cx';
 import { MonthStepper } from '../components/MonthControls';
 import { ErrorState, LoadingState, QueryState } from '../components/QueryState';
 import { billStatusBadge } from '../components/billStatus';
+import { BillsCalendarFull, OpenCalendarButton } from '../components/BillsCalendarFull';
 
 type Visual = 'paid' | 'due' | 'overdue' | 'partial' | 'skipped';
 
@@ -97,6 +99,7 @@ function BillsMonth({
   onMonth: (month: string) => void;
 }) {
   const { version } = useEntry();
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const bills = useView<VBillStatus>(`v_bill_status:${month}:${version}`, (sb) =>
     sb.from('v_bill_status').select('*').eq('due_month', month).order('due_date').order('bill_name'),
   );
@@ -111,6 +114,7 @@ function BillsMonth({
         title="Bills"
         actions={
           <>
+            <OpenCalendarButton onClick={() => setCalendarOpen(true)} />
             {currentMonth && month !== currentMonth ? (
               <button
                 type="button"
@@ -198,6 +202,10 @@ function BillsMonth({
           </Card>
         </div>
       </div>
+
+      {calendarOpen ? (
+        <BillsCalendarFull month={month} today={today} onMonth={onMonth} onClose={() => setCalendarOpen(false)} />
+      ) : null}
 
       <Card title={`Bills in ${formatMonth(month)}`} className="mt-4">
         <QueryState state={bills} label="bills" loadingLines={6} empty={`No bills due in ${formatMonth(month)}.`}>

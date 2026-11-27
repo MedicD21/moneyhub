@@ -434,6 +434,45 @@ export type VPayPeriodForecast = {
   extra_shift_hours: number | null;
 };
 
+// ---------------------------------------------------------------------------
+// 20261127000000_daily_balance_forecast.sql
+// ---------------------------------------------------------------------------
+
+/** One scheduled item inside a v_daily_balance_forecast row's `events` array. */
+export type DailyBalanceEvent = {
+  /** 'income' | 'bill' | 'debt_minimum' | 'set_aside' | 'extra_debt' (paycheck_plan item types) */
+  type: string;
+  name: string;
+  /** signed: money in positive, money out negative */
+  amount: number;
+  /** bill items only: 'due' | 'partial' | 'projected' */
+  status: string | null;
+  /** past-due item pulled onto today; item_date keeps the original due date */
+  overdue: boolean;
+  /** bill with no occurrence row yet (projected from the bill's schedule) */
+  projected: boolean;
+  occurrence_id: Uuid | null;
+  item_date: IsoDate;
+};
+
+/**
+ * public.v_daily_balance_forecast: one row per day from today to the end of the forecast horizon.
+ * projected_balance is the end-of-day SPENDABLE balance (same cash base and events as
+ * v_pay_period_forecast, so it equals binding_balance on a binding_date). Scheduled items only:
+ * no groceries, dining or other discretionary spending.
+ */
+export type VDailyBalanceForecast = {
+  day: IsoDate;
+  projected_balance: number;
+  income_total: number;
+  outflow_total: number;
+  event_count: number;
+  events: DailyBalanceEvent[];
+  is_today: boolean;
+  /** date of the newest balance snapshot behind the cash base (same for every row) */
+  cash_as_of: IsoDate | null;
+};
+
 /** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */
 export type VBillMonthTotals = {
   due_month: IsoDate;
@@ -719,6 +758,7 @@ export type Database = {
       v_pay_periods: ReadOnlyView<VPayPeriod>;
       v_dashboard: ReadOnlyView<VDashboard>;
       v_pay_period_forecast: ReadOnlyView<VPayPeriodForecast>;
+      v_daily_balance_forecast: ReadOnlyView<VDailyBalanceForecast>;
       v_set_asides: ReadOnlyView<VSetAside>;
       v_envelopes: ReadOnlyView<VEnvelope>;
       v_envelope_moves: ReadOnlyView<VEnvelopeMove>;
