@@ -471,6 +471,8 @@ export type VDailyBalanceForecast = {
   is_today: boolean;
   /** date of the newest balance snapshot behind the cash base (same for every row) */
   cash_as_of: IsoDate | null;
+  /** lowest projected balance from this day to the end of the horizon, minus the low-balance floor; null when not positive */
+  safe_to_spend: number | null;
 };
 
 /** public.v_bill_month_totals (active bills, skipped occurrences excluded; one row per due_month) */
