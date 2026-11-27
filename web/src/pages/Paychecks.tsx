@@ -190,7 +190,7 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
                 </dd>
               </div>
               <div>
-                <dt className="text-xs text-muted">Bills</dt>
+                <dt className="text-xs text-muted">Bills &amp; debts</dt>
                 <dd className="font-semibold text-ink">
                   <Money value={p.bills_total} />
                 </dd>
@@ -228,9 +228,9 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
                 </ItemGroup>
               ) : null}
               <ItemGroup
-                title="Bills"
+                title="Bills & debts"
                 total={p.bills_total}
-                empty="No bills due this period."
+                empty="No bills or debt payments due this period."
               >
                 {bills.map((b) => {
                   const badge = billStatusBadge(
@@ -252,20 +252,24 @@ function PeriodCard({ p, f }: { p: VPayPeriod; f: VPayPeriodForecast | null }) {
                   );
                 })}
               </ItemGroup>
-              <ItemGroup
-                title="Debt minimums"
-                total={p.minimums_total}
-                empty="No minimums due this period."
-              >
-                {mins.map((m) => (
-                  <ItemLine
-                    key={`${m.id}-${m.date}`}
-                    name={m.name}
-                    meta={`${formatDate(m.date, "short")}${m.already_paid > 0 ? ` · ${formatCurrency(m.already_paid)} already paid` : ""}`}
-                    amount={m.amount}
-                  />
-                ))}
-              </ItemGroup>
+              {/* Every debt has a linked bill, so its payment is listed under Bills & debts. This section
+                  only appears for a debt without a bill (the plan then counts its minimum here). */}
+              {mins.length > 0 ? (
+                <ItemGroup
+                  title="Debt minimums"
+                  total={p.minimums_total}
+                  empty="No minimums due this period."
+                >
+                  {mins.map((m) => (
+                    <ItemLine
+                      key={`${m.id}-${m.date}`}
+                      name={m.name}
+                      meta={`${formatDate(m.date, "short")}${m.already_paid > 0 ? ` · ${formatCurrency(m.already_paid)} already paid` : ""}`}
+                      amount={m.amount}
+                    />
+                  ))}
+                </ItemGroup>
+              ) : null}
             </div>
             <div className="space-y-4">
               <ItemGroup
