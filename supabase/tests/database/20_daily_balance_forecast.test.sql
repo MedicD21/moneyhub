@@ -24,7 +24,7 @@ truncate public.app_settings, public.accounts, public.import_batches, public.cat
   public.bills, public.bill_occurrences, public.debts, public.debt_balances, public.set_asides,
   public.debt_plans, public.envelopes cascade;
 grant execute on all functions in schema extensions to anon, authenticated;
-select plan(15);
+select plan(18);
 
 insert into auth.users (id, email) values ('11111111-1111-1111-1111-111111111111', 'owner@test.local');
 select public.bootstrap_owner('owner@test.local');
@@ -88,11 +88,25 @@ select is((select projected_balance from public.daily_balance_forecast(2, 1) whe
           (select min(binding_balance) from public.pay_period_forecast(2, 1)),
           'the lowest forecast point shows up on the calendar');
 
+-- safe_to_spend is empty while a later day dips below the floor
+select is((select safe_to_spend from public.v_daily_balance_forecast where day = '2026-03-10'), null::numeric,
+          'no safe_to_spend while a later day dips below the floor');
+
 -- a skipped bill drops out
 update public.bill_occurrences set status = 'skipped'
  where bill_id = 'e0000000-0000-0000-0000-000000000001';
 select is((select projected_balance from public.daily_balance_forecast(2, 1) where day = '2026-03-15'), 945.00::numeric,
           'a skipped bill is not subtracted');
+
+-- safe_to_spend per day: lowest balance ahead minus the floor, null when not positive
+select is((select count(*)::int from public.v_daily_balance_forecast v
+            where v.safe_to_spend is not null
+              and v.safe_to_spend > v.projected_balance - (select low_balance_threshold from public.app_settings limit 1)),
+          0, 'safe_to_spend never exceeds balance minus the floor');
+select is((select v.safe_to_spend from public.v_daily_balance_forecast v order by v.day desc limit 1),
+          (select greatest(v.projected_balance - (select low_balance_threshold from public.app_settings limit 1), 0)
+             from public.v_daily_balance_forecast v order by v.day desc limit 1),
+          'last day: safe_to_spend is its balance minus the floor');
 
 -- the signed-in owner can read the view; anonymous cannot
 set local role authenticated;

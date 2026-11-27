@@ -206,7 +206,7 @@ export function BillsCalendarFull({
             )}
 
             <p className="px-1 text-xs text-muted">
-              Top right of each day: projected spendable balance at the end of the day.
+              Top right of each day: projected spendable balance at the end of the day. Bottom of a day: safe to spend, the lowest projected balance from that day onward minus your low-balance floor (shown only when positive).
               {cashAsOf ? ` Starts from the balance as of ${formatDate(cashAsOf, 'medium')}.` : ''} Scheduled paychecks, bills,
               minimums, set-asides and plan payments only: no groceries, dining or other spending.
             </p>
@@ -287,6 +287,7 @@ function Grid({
           const label = [
             formatDate(iso, 'weekday'),
             row ? `projected balance ${formatCurrency(row.projected_balance)}` : null,
+            row && row.safe_to_spend !== null ? `safe to spend ${formatCurrency(row.safe_to_spend)}` : null,
             bills.length > 0 ? bills.map((b) => `${b.bill_name} ${billStatusBadge(b.status, b.overdue && b.bill_is_active).label}`).join(', ') : null,
             extras.length > 0 ? extras.map(eventLabel).join(', ') : null,
           ]
@@ -360,6 +361,13 @@ function Grid({
                     </span>
                   </>
                 ) : null}
+
+                {row && row.safe_to_spend !== null ? (
+                  <span className="mt-auto flex min-w-0 flex-wrap items-baseline justify-between gap-x-1 pt-1 text-[9px] leading-3 tabular-nums text-pos sm:text-[10.5px] xl:text-xs">
+                    <span className="text-muted">Safe</span>
+                    <span className="font-semibold">{formatCurrency(row.safe_to_spend)}</span>
+                  </span>
+                ) : null}
               </button>
             </li>
           );
@@ -393,6 +401,12 @@ function DayDetail({
         ) : undefined
       }
     >
+      {row && row.safe_to_spend !== null ? (
+        <div className="mb-3 flex items-baseline justify-between gap-3 rounded-lg border border-ok-line bg-ok-bg px-3 py-2">
+          <span className="text-sm text-muted">Safe to spend</span>
+          <span className="font-semibold tabular-nums text-pos">{formatCurrency(row.safe_to_spend)}</span>
+        </div>
+      ) : null}
       {bills.length === 0 && extras.length === 0 ? (
         <p className="text-sm text-muted">Nothing scheduled this day.</p>
       ) : (
