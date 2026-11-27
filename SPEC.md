@@ -333,7 +333,7 @@ Pages (mobile-first):
 1. **Dashboard:** `v_dashboard` cards, 7-day upcoming bills, safe-to-spend, "data is N days old" warning, review queue count.
 2. **Transactions:** table from `transactions` joined to categories, with filters for month, category, account, and tag. Rows with `needs_review` are highlighted.
 3. **Bills:** month calendar + list from `v_bill_status` (paid/due/overdue colors) and the monthly total from `v_monthly_bills_total`. A full-screen calendar (Calendar button) adds each day's projected end-of-day spendable balance from `v_daily_balance_forecast` (same cash base and events as `v_pay_period_forecast`; scheduled items only, no discretionary spending).
-4. **Paychecks:** timeline from `v_pay_periods`. Each card lists the bills covered, minimums, set-asides, extra debt, and safe-to-spend. The forecast box also breaks down the money held back for later paychecks (`reserve_to`, `reserve_unassigned`, `reserve_from`, `reserve_unfunded` on `v_pay_period_forecast`, first in, first out). A paused set-aside can be deleted from the web.
+4. **Paychecks:** timeline from `v_pay_periods`. Each card lists the bills covered, minimums, set-asides, extra debt (naming the debt that receives it, from `targets` on the `extra_debt` item of `paycheck_plan`), and safe-to-spend. The forecast box also breaks down the money held back for later paychecks (`reserve_to`, `reserve_unassigned`, `reserve_from`, `reserve_unfunded` on `v_pay_period_forecast`, first in, first out). A paused set-aside can be deleted from the web.
 5. **Spending:** charts from `v_month_spending` and `v_cash_flow`.
 6. **Debts:** `v_debts` table + balance history chart from `debt_balances` + the active `debt_plans` schedule as a projected line.
 

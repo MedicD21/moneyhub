@@ -620,12 +620,21 @@ export type VRainyDaySuggestion = {
   remaining_gap: number;
 };
 
+/** Which debt gets (part of) a paycheck's extra payment, per the active plan's schedule for that month. */
+export type PaycheckExtraDebtTarget = {
+  debt_id: string;
+  name: string;
+  amount: number;
+};
+
 export type PaycheckExtraDebtItem = {
   type: 'extra_debt';
   name: string;
   amount: number;
   extra_monthly: number;
   paydays_per_year: number;
+  /** Absent only on rows computed before migration 20261127200000. Targets add up to `amount`. */
+  targets?: PaycheckExtraDebtTarget[];
 };
 
 export type PaycheckItem =
