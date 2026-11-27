@@ -8,6 +8,7 @@ import type {
   PaycheckExtraDebtItem,
   PaycheckIncomeItem,
   PaycheckSetAsideItem,
+  ReserveFlow,
   VPayPeriod,
   VPayPeriodForecast,
 } from "../types/db";
@@ -396,10 +397,33 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
           <Money value={f.hold_for_later} />
         </Row>
       ) : null}
+      {holding ? (
+        <ReserveBreakdown
+          intro="Where it goes (oldest money used first):"
+          flows={f.reserve_to}
+          flowLabel={(x) => `Covers the ${formatDate(x.pay_date, "short")} paycheck's bills`}
+          remainder={f.reserve_unassigned}
+          remainderLabel="Not needed yet, stays in reserve"
+        />
+      ) : null}
       {drawing ? (
         <Row label="Taken from money held back earlier">
           <Money value={-f.hold_for_later} />
         </Row>
+      ) : null}
+      {drawing ? (
+        <ReserveBreakdown
+          intro="Where it comes from (oldest money used first):"
+          flows={f.reserve_from}
+          flowLabel={(x) =>
+            x.period_index === 1
+              ? "Cash left over from the current period"
+              : `Held back from the ${formatDate(x.pay_date, "short")} paycheck`
+          }
+          remainder={f.reserve_unfunded !== null && f.reserve_unfunded > 0.02 ? f.reserve_unfunded : null}
+          remainderLabel="Not covered by any earlier money"
+          remainderWarn
+        />
       ) : null}
       {f.cash_before_spending !== null ? (
         <Row
@@ -456,6 +480,49 @@ function ForecastBox({ f }: { f: VPayPeriodForecast }) {
           before {formatDate(f.binding_date, "short")} to help.
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function ReserveBreakdown({
+  intro,
+  flows,
+  flowLabel,
+  remainder,
+  remainderLabel,
+  remainderWarn = false,
+}: {
+  intro: string;
+  flows: ReserveFlow[];
+  flowLabel: (flow: ReserveFlow) => string;
+  remainder: number | null;
+  remainderLabel: string;
+  remainderWarn?: boolean;
+}) {
+  // Amounts come straight from the view (database does the math); this only lists them.
+  const showRemainder = remainder !== null && remainder > 0.02;
+  if (flows.length === 0 && !showRemainder) return null;
+  return (
+    <div className="mb-1 ml-3 border-l border-line pl-3">
+      <p className="text-xs text-muted">{intro}</p>
+      <ul className="mt-0.5">
+        {flows.map((x) => (
+          <li key={x.period_index} className="flex items-baseline justify-between gap-3 py-0.5 text-xs text-muted">
+            <span className="min-w-0">{flowLabel(x)}</span>
+            <span className="shrink-0 text-right tabular-nums text-ink">
+              <Money value={x.amount} />
+            </span>
+          </li>
+        ))}
+        {showRemainder ? (
+          <li className="flex items-baseline justify-between gap-3 py-0.5 text-xs">
+            <span className={cx("min-w-0", remainderWarn ? "text-danger" : "text-muted")}>{remainderLabel}</span>
+            <span className={cx("shrink-0 text-right tabular-nums", remainderWarn ? "text-danger" : "text-ink")}>
+              <Money value={remainder} />
+            </span>
+          </li>
+        ) : null}
+      </ul>
     </div>
   );
 }

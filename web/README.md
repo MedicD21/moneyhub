@@ -61,7 +61,8 @@ every balance:
 | `set_transaction_cleared` | The Cleared checkbox |
 | `move_envelope_money` | Moves into or out of any envelope (virtual; no real money moves). A move in is refused if envelopes plus set-aside balances would exceed real cash (`20261113030000`) |
 | `create_envelope` / `update_envelope` | Envelopes page: new goal envelope (name only, starts at $0), rename, archive (balance must be $0), restore. The rainy-day fund and locked savings are fixed (`20261113040000`) |
-| `create_set_aside` / `update_set_aside` | Paychecks page, Set-asides section: create, edit, pause / resume. Never deleted. The balance stays derived in `v_set_asides` (`20261113050000`) |
+| `create_set_aside` / `update_set_aside` | Paychecks page, Set-asides section: create, edit, pause / resume. The balance stays derived in `v_set_asides` (`20261113050000`) |
+| `delete_set_aside` | Set-asides section: Delete on a paused set-aside (tap twice). Refused while it is active or while bank-reconciled transactions are tagged to it (the reconciliation guard is not weakened); unreconciled tagged rows keep everything but the link (`20261127190000`) |
 | `review_transaction` | Review page (`/review`) and "Review" / "Edit details" on imported or reconciled rows: category, note, bill or debt link, and resolving the review question. Works on any row; never changes amount, date, merchant, status, cleared or reconciliation (`20261115000000`) |
 | `create_merchant_rule` | "Always do this for [merchant]" in the review form: saves a case-insensitive pattern + category. Applied to future imports by `commit_screenshot_import`, and to other open uncategorized reviews that match (`20261115000000`) |
 

@@ -4,7 +4,7 @@ import { useEntry } from './EntryContext';
 import type { CategoryRow, VAppInfo, VSetAside } from '../types/db';
 import { formatCurrency, todayLocal } from '../lib/format';
 import { amountToInputText, centsToDollars, parseCentsAllowZero, sanitizeAmountInput } from '../lib/money';
-import { createSetAside, updateSetAside, type SetAsideInput } from '../lib/writes';
+import { createSetAside, deleteSetAside, updateSetAside, type SetAsideInput } from '../lib/writes';
 import { cx } from '../lib/cx';
 import { Badge, Banner, Button, Field, Meter, Money, inputClass } from './ui';
 import { Icon } from './Icon';
@@ -96,6 +96,7 @@ function SetAsideItem({ r, onEdit, onChanged }: { r: VSetAside; onEdit: () => vo
   const { bump } = useEntry();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   // Bar width only (chart scaling) from the view's balance and cap.
   const pct = r.cap && r.cap > 0 ? Math.min(Math.max(r.balance / r.cap, 0), 1) : null;
 
@@ -110,6 +111,24 @@ function SetAsideItem({ r, onEdit, onChanged }: { r: VSetAside; onEdit: () => vo
     }
     bump();
     onChanged(isActive ? `Resumed ${r.name}.` : `Paused ${r.name}.`);
+  }
+
+  async function remove() {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const res = await deleteSetAside(r.id);
+    setBusy(false);
+    if (!res.ok) {
+      setConfirmDelete(false);
+      setError(res.error);
+      return;
+    }
+    bump();
+    onChanged(`Deleted ${r.name}.`);
   }
 
   return (
@@ -141,6 +160,16 @@ function SetAsideItem({ r, onEdit, onChanged }: { r: VSetAside; onEdit: () => vo
         <Button onClick={() => void setActive(!r.is_active)} disabled={busy} variant="ghost">
           {busy ? 'Saving…' : r.is_active ? 'Pause' : 'Resume'}
         </Button>
+        {!r.is_active ? (
+          <Button
+            onClick={() => void remove()}
+            disabled={busy}
+            variant="ghost"
+            className={cx(confirmDelete && 'border-danger-line text-danger')}
+          >
+            {confirmDelete ? 'Tap again to delete for good' : 'Delete'}
+          </Button>
+        ) : null}
       </div>
       {error ? (
         <p role="alert" className="mt-1 text-xs text-danger">

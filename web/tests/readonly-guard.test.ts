@@ -28,6 +28,7 @@ const ALLOWED_RPCS = [
   'update_envelope',
   'create_set_aside',
   'update_set_aside',
+  'delete_set_aside',
   'review_transaction',
   'create_merchant_rule',
 ];
@@ -85,9 +86,9 @@ describe('write-surface guard', () => {
     expect(violations, `rpc() outside writes.ts:\n${violations.join('\n')}`).toEqual([]);
   });
 
-  it('whitelists exactly eleven write functions', () => {
-    expect(ALLOWED_RPCS).toHaveLength(11);
-    expect(new Set(ALLOWED_RPCS).size).toBe(11);
+  it('whitelists exactly twelve write functions', () => {
+    expect(ALLOWED_RPCS).toHaveLength(12);
+    expect(new Set(ALLOWED_RPCS).size).toBe(12);
   });
 
   it('writes.ts calls only whitelisted functions, by literal name', () => {
