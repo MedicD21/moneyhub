@@ -17,7 +17,10 @@ so it is clear which overtime shifts belong on which check. The read-only
 per hour on that paycheck, spending held back from the start of its pay period) and returns the lowest
 balance, the room left to spend, and suggested extra hours per paycheck. An unsaved draft is recalculated as
 you type; "Save plan" stores it with `save_shortfall_plan`. Overtime is ignored on a paycheck that is paid or
-whose real net is entered (the actual already includes it). The plan never changes the Dashboard or the real
+whose real net is entered (the actual already includes it). A paycheck whose amount is only a forecast
+estimate (`pay_date_overrides.is_estimate`, used when Dustin reports known overtime before the check lands,
+`20261127231500`) stays open: the known overtime is already in the baseline and planned hours are added on top
+of it. The plan never changes the Dashboard or the real
 forecast, and a dip in a pay period that has already started is reported as one overtime cannot fix.
 
 The **What if** page (`/what-if`) previews debt-payoff scenarios through the read-only
