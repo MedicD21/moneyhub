@@ -13,7 +13,7 @@ truncate public.app_settings, public.accounts, public.import_batches, public.cat
   public.bills, public.bill_occurrences, public.debts, public.debt_balances, public.set_asides,
   public.debt_plans, public.envelopes, public.shortfall_plans, public.pay_date_overrides cascade;
 grant execute on all functions in schema extensions to anon, authenticated;
-select plan(32);
+select plan(34);
 
 insert into auth.users (id, email) values ('11111111-1111-1111-1111-111111111111', 'owner@test.local');
 select public.bootstrap_owner('owner@test.local');
@@ -159,6 +159,22 @@ select results_eq(
       from public.shortfall_plan_forecast('[]') f, jsonb_array_elements(f.plan_periods) p where p->>'pay_date' = '2026-04-16'$$,
   $$values ('2026-03-30'::text, '2026-04-12'::text)$$,
   'a payday moved early keeps the work period of its scheduled date (paid 04-16, scheduled 04-17: 03-30 to 04-12)');
+
+-- ---------------------------------------------------------------- read: an estimate override stays open for OT
+-- (20261127231500). A real net locks the paycheck; a flagged estimate does not.
+select is((select is_estimate from public.pay_date_overrides where scheduled_date = '2026-04-03'), false,
+          'an override is a real amount by default (is_estimate false)');
+reset role;
+insert into public.pay_date_overrides (income_source_id, scheduled_date, actual_date, actual_net, is_estimate)
+select id, '2026-05-01', '2026-05-01', 2100, true from public.income_sources where name = 'Job';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","role":"authenticated"}';
+select results_eq(
+  $$select p->>'status', (p->>'ot_hours')::numeric, (p->>'ot_net')::numeric, (p->>'ot_replaced')::boolean, (p->>'income_amount')::numeric
+      from public.shortfall_plan_forecast('[{"pay_date":"2026-05-01","ot_hours":4}]') f, jsonb_array_elements(f.plan_periods) p
+     where p->>'pay_date' = '2026-05-01'$$,
+  $$values ('open'::text, 4::numeric, 107.20::numeric, false, 2100.00::numeric)$$,
+  'a flagged estimate stays open: planned OT (4 h = 107.20 net) is added on top of the 2100 estimate, not replaced');
 
 select * from finish();
 rollback;

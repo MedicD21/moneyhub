@@ -46,7 +46,7 @@ Run from the repo root or `web/`. Requires Node 22+.
 
 - Money in is positive, money out is negative.
 - Manual transactions are stored with status `pending`, so balance views count them until a screenshot import posts them. `cleared` is the user's own note and changes no math.
-- Paychecks: base 23.80/hr, overtime 35.70/hr, holiday pay is straight time, PERS 10%, benefits only on the first two checks by EFT month. Dustin enters actual net amounts through `pay_date_overrides`. Estimates must be replaced by actuals, never added on top.
+- Paychecks: base 23.80/hr, overtime 35.70/hr, holiday pay is straight time, PERS 10%, benefits only on the first two checks by EFT month. Dustin enters actual net amounts through `pay_date_overrides`. Estimates must be replaced by actuals, never added on top. An override that is only a forecast estimate (known overtime added before the check lands) is flagged `is_estimate = true`; the Planner treats those paychecks as open and adds planned OT on top, while a real net (`is_estimate = false`) locks the paycheck.
 - A raise is expected in January. When it lands, `income_sources.expected_net`, `app_settings.extra_hour_net` and `holiday_hour_net`, the 2027 three-check overrides and the debt plan all need updating. Ask Dustin for the figures.
 
 ## How to work

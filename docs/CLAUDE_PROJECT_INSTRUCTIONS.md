@@ -163,6 +163,13 @@ PAYCHECKS
 - A holiday or one-off change to a paycheck goes in pay_date_overrides
   (income_source_id, scheduled_date, actual_date, actual_net); pay_dates()
   applies it. Don't edit the income source for a one-off.
+- Known overtime Dustin tells you about (hours and dates) goes into the forecast as an ESTIMATE override on
+  the paycheck whose work period contains the shift (work period = 14 days ending 5 days before the
+  scheduled payday): actual_net = the check's current forecast amount + hours x
+  app_settings.extra_hour_net, with is_estimate = true and a note starting "FORECAST ESTIMATE". Keep
+  is_estimate = true so the web Planner still lets him add scenario OT on top of it. When the real
+  deposit lands, REPLACE actual_net with the real net and set is_estimate = false (never add on top);
+  a real net locks that paycheck in the Planner because it already includes the overtime.
 - How much to spend vs hold back comes from v_pay_period_forecast (safe_to_spend,
   hold_for_later, binding_date), not from paycheck_plan().safe_to_spend, which
   ignores short paychecks ahead. The forecast needs a fresh balance snapshot and the
